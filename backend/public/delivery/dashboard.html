@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Delivery Dashboard — MessMitra</title>
+<link rel="stylesheet" href="/css/main.css">
+<link rel="stylesheet" href="/css/components.css">
+<link rel="manifest" href="/manifest.json">
+<style>
+  .hero{background:linear-gradient(135deg,#0C2340,#1a3a5c);border-radius:var(--radius-xl);padding:24px;color:#fff;margin-bottom:16px;position:relative;overflow:hidden;}
+  .hero-bg{position:absolute;right:-10px;top:-10px;font-size:5rem;opacity:.06;pointer-events:none;}
+  .hero-name{font-size:1.25rem;font-weight:800;margin-bottom:2px;}
+  .hero-sub{font-size:.875rem;color:#94A3B8;}
+  .quick-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px;}
+  .q-stat{background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-lg);padding:14px;text-align:center;}
+  .q-stat-n{font-size:1.375rem;font-weight:800;font-family:var(--font-mono);}
+  .q-stat-l{font-size:.6875rem;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--color-text-muted);margin-top:3px;}
+  .order-card{background:var(--color-surface);border:1.5px solid var(--color-border);border-radius:var(--radius-lg);padding:14px;margin-bottom:10px;transition:var(--transition);}
+  .order-card:hover{border-color:var(--color-primary);}
+  .order-student{font-size:.9375rem;font-weight:700;}
+  .order-addr{font-size:.8125rem;color:var(--color-text-muted);margin:3px 0 10px;}
+  .order-actions{display:flex;gap:8px;flex-wrap:wrap;}
+</style>
+</head>
+<body class="page-student">
+<script>
+  const _t = localStorage.getItem('mm_token');
+  const _u = (() => { try { return JSON.parse(localStorage.getItem('mm_user')); } catch { return null; } })();
+  if (!_t || !_u) { window.location.replace('/login.html'); }
+</script>
+<div class="app-shell">
+  <aside class="sidebar">
+    <div class="sidebar-logo"><div class="sidebar-logo-mark">MessMitra</div><div class="sidebar-logo-sub">delivery portal</div></div>
+    <nav class="sidebar-nav">
+      <div class="sidebar-section-label">Menu</div>
+      <a href="/delivery/dashboard.html" class="sidebar-item active"><div class="sidebar-item-dot"></div>Dashboard</a>
+      <a href="/delivery/orders.html" class="sidebar-item"><div class="sidebar-item-dot"></div>My orders</a>
+      <div class="sidebar-section-label">Account</div>
+      <a href="/delivery/profile.html" class="sidebar-item"><div class="sidebar-item-dot"></div>Profile</a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="sidebar-user">
+        <div class="avatar avatar-sm" data-user-initials>?</div>
+        <div><div class="sidebar-user-name" data-user-name></div><div class="sidebar-user-role">Delivery</div></div>
+      </div>
+    </div>
+  </aside>
+
+  <div class="main-content">
+    <header class="topbar">
+      <div style="flex:1;font-size:1rem;font-weight:700;" data-user-name>Dashboard</div>
+      <button class="btn btn-secondary btn-sm" onclick="loadDashboard()" id="refresh-btn">↻ Refresh</button>
+      <div style="font-size:.75rem;color:var(--color-text-muted);" id="topbar-date"></div>
+    </header>
+    <main class="page-content">
+      <div id="page-body"><div class="skeleton" style="height:160px;margin-bottom:16px;border-radius:var(--radius-xl);"></div></div>
+    </main>
+  </div>
+</div>
+
+<div class="bottom-tabs">
+  <div class="bottom-tabs-inner">
+    <a href="/delivery/dashboard.html" class="tab-item active">
+      <svg viewBox="0 0 22 22"><rect x="2" y="2" width="8" height="8" rx="2"/><rect x="12" y="2" width="8" height="8" rx="2"/><rect x="2" y="12" width="8" height="8" rx="2"/><rect x="12" y="12" width="8" height="8" rx="2"/></svg>
+      <span>Home</span><div class="tab-dot"></div>
+    </a>
+    <a href="/delivery/orders.html" class="tab-item">
+      <svg viewBox="0 0 22 22"><path d="M3 11l4-7h8l4 7v4H3z"/><circle cx="7" cy="18" r="2"/><circle cx="15" cy="18" r="2"/></svg>
+      <span>Orders</span><div class="tab-dot"></div>
+    </a>
+    <a href="/delivery/profile.html" class="tab-item">
+      <svg viewBox="0 0 22 22"><circle cx="11" cy="7" r="4"/><path d="M3 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+      <span>Profile</span><div class="tab-dot"></div>
+    </a>
+  </div>
+</div>
+
+<script src="/js/auth.js"></script>
+<script src="/js/api.js"></script>
+<script src="/js/utils.js"></script>
+<script>
+if(!auth.requireAuth(['DELIVERY'])){}
+utils.fillUserInfo()
+utils.registerSW()
+document.getElementById('topbar-date').textContent=new Date().toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'long'})
+
+async function markPickup(id){
+  try{await api.delivery.pickup(id);utils.toast('Marked as picked up!','success');loadDashboard()}catch(err){utils.toast(err.message,'error')}
+}
+async function markDelivered(id){
+  try{await api.delivery.deliver(id);utils.toast('Delivered!','success');loadDashboard()}catch(err){utils.toast(err.message,'error')}
+}
+async function markFailed(id){
+  const reason=prompt('Reason for failure (optional):')
+  try{await api.delivery.fail(id,{failureReason:reason||'Unable to deliver'});utils.toast('Marked as failed','warning');loadDashboard()}catch(err){utils.toast(err.message,'error')}
+}
+
+async function loadDashboard(){
+  try{
+    const orders=await api.delivery.my()
+    const user=auth.getUser()
+    const pending=orders.filter(o=>o.status==='ASSIGNED').length
+    const picked=orders.filter(o=>o.status==='PICKED_UP').length
+    const total=orders.length
+
+    let html=`
+      <div class="hero fade-up">
+        <div class="hero-bg">🛵</div>
+        <div class="hero-name">Hey, ${user.name.split(' ')[0]}!</div>
+        <div class="hero-sub">${new Date().toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'long'})}</div>
+      </div>
+      <div class="quick-stats">
+        <div class="q-stat fade-up delay-1"><div class="q-stat-n" id="s-total" style="color:var(--color-primary);">0</div><div class="q-stat-l">Today total</div></div>
+        <div class="q-stat fade-up delay-2"><div class="q-stat-n" id="s-pending" style="color:var(--color-warning);">0</div><div class="q-stat-l">Pending</div></div>
+        <div class="q-stat fade-up delay-3"><div class="q-stat-n" id="s-picked" style="color:var(--color-cyan);">0</div><div class="q-stat-l">In transit</div></div>
+      </div>`
+
+    setTimeout(()=>{
+      utils.countUp(document.getElementById('s-total'),total)
+      utils.countUp(document.getElementById('s-pending'),pending)
+      utils.countUp(document.getElementById('s-picked'),picked)
+    },200)
+
+    if(orders.length===0){
+      html+=`<div class="empty-state card fade-up delay-2"><div class="empty-state-icon">📭</div><h3>No orders today</h3><p>You have no assigned deliveries right now. Check back after the owner assigns orders.</p></div>`
+    }else{
+      html+=`<div class="card fade-up delay-2"><div class="card-header"><span class="card-title">Today's orders</span><a href="/delivery/orders.html" class="card-action">View all →</a></div>`
+      orders.forEach(o=>{
+        const student=o.attendanceLog.subscription.user
+        const meal=o.attendanceLog.mealType
+        html+=`
+          <div class="order-card">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+              <div class="order-student">${student.name}</div>
+              ${utils.statusBadge(o.status)}
+            </div>
+            <div class="order-addr">${o.deliveryAddress}</div>
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+              <span class="badge badge-neutral">${meal.charAt(0)+meal.slice(1).toLowerCase()}</span>
+              <a href="https://maps.google.com/?q=${encodeURIComponent(o.deliveryAddress)}" target="_blank" class="btn btn-ghost btn-sm" style="font-size:.75rem;">Open in Maps</a>
+            </div>
+            <div class="order-actions">
+              ${o.status==='ASSIGNED'?`<button class="btn btn-primary btn-sm" onclick="markPickup('${o.id}')">Mark picked up</button>`:''}
+              ${o.status==='PICKED_UP'?`<button class="btn btn-success btn-sm" onclick="markDelivered('${o.id}')">Mark delivered</button>`:''}
+              ${['ASSIGNED','PICKED_UP'].includes(o.status)?`<button class="btn btn-danger btn-sm" onclick="markFailed('${o.id}')">Report failed</button>`:''}
+            </div>
+          </div>`
+      })
+      html+=`</div>`
+    }
+
+    document.getElementById('page-body').innerHTML=html
+    utils.initRipples()
+
+    // Auto-refresh every 30s when orders are in ASSIGNED status
+    if(orders.some(o=>o.status==='ASSIGNED')){
+      setTimeout(loadDashboard,30000)
+    }
+  }catch(err){
+    document.getElementById('page-body').innerHTML=`<div class="empty-state"><div class="empty-state-icon">⚠️</div><h3>Error</h3><p>${err.message}</p></div>`
+  }
+}
+loadDashboard()
+</script>
+</body>
+</html>

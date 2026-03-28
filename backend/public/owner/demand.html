@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Demand & Attendance — MessMitra</title>
+<link rel="stylesheet" href="/css/main.css">
+<link rel="stylesheet" href="/css/components.css">
+<link rel="manifest" href="/manifest.json">
+<style>
+  .demand-cards{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:16px;}
+  .demand-card{background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-lg);padding:14px;text-align:center;}
+  .demand-n{font-size:1.75rem;font-weight:800;font-family:var(--font-mono);}
+  .demand-l{font-size:.6875rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--color-text-muted);margin-top:3px;}
+  .student-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--color-border);}
+  .student-row:last-child{border:none;}
+  @media(max-width:640px){.demand-cards{grid-template-columns:repeat(2,1fr);}}
+</style>
+</head>
+<body class="page-owner">
+<script>
+  const _t = localStorage.getItem('mm_token');
+  const _u = (() => { try { return JSON.parse(localStorage.getItem('mm_user')); } catch { return null; } })();
+  if (!_t || !_u) { window.location.replace('/login.html'); }
+</script>
+<div class="app-shell">
+  <aside class="sidebar">
+    <div class="sidebar-logo"><div class="sidebar-logo-mark">MessMitra</div><div class="sidebar-logo-sub">owner portal</div></div>
+    <nav class="sidebar-nav">
+      <a href="/owner/dashboard.html" class="sidebar-item"><div class="sidebar-item-dot"></div>Dashboard</a>
+      <a href="/owner/demand.html" class="sidebar-item active"><div class="sidebar-item-dot"></div>Demand & attendance</a>
+      <a href="/owner/menu-manage.html" class="sidebar-item"><div class="sidebar-item-dot"></div>Menu</a>
+      <a href="/owner/plans.html" class="sidebar-item"><div class="sidebar-item-dot"></div>Plans</a>
+      <a href="/owner/subscribers.html" class="sidebar-item"><div class="sidebar-item-dot"></div>Subscribers</a>
+      <a href="/owner/delivery-manage.html" class="sidebar-item"><div class="sidebar-item-dot"></div>Deliveries</a>
+      <a href="/owner/holidays.html" class="sidebar-item"><div class="sidebar-item-dot"></div>Holidays</a>
+      <a href="/owner/reviews.html" class="sidebar-item"><div class="sidebar-item-dot"></div>Reviews</a>
+      <a href="/owner/mess-setup.html" class="sidebar-item"><div class="sidebar-item-dot"></div>Mess setup</a>
+      <a href="/owner/profile.html" class="sidebar-item"><div class="sidebar-item-dot"></div>Profile</a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="sidebar-user">
+        <div class="avatar avatar-sm" data-user-initials>?</div>
+        <div><div class="sidebar-user-name" data-user-name></div><div class="sidebar-user-role">Owner</div></div>
+      </div>
+    </div>
+  </aside>
+  <div class="main-content">
+    <header class="topbar">
+      <div style="flex:1;font-size:1rem;font-weight:700;">Demand & attendance</div>
+      <button class="btn btn-primary btn-sm" onclick="generateOrders()">Generate orders</button>
+    </header>
+    <main class="page-content">
+      <div id="page-body"><div class="skeleton" style="height:300px;"></div></div>
+    </main>
+  </div>
+</div>
+<script src="/js/auth.js"></script>
+<script src="/js/api.js"></script>
+<script src="/js/utils.js"></script>
+<script>
+if(!auth.requireAuth(['OWNER'])){}
+utils.fillUserInfo()
+utils.registerSW()
+
+async function generateOrders(){
+  try{
+    const r=await api.delivery.generate()
+    utils.toast(`${r.generated} orders generated!`,'success')
+  }catch(err){utils.toast(err.message,'error')}
+}
+
+async function loadPage(){
+  try{
+    const[demand,summary]=await Promise.all([
+      api.attendance.messToday(),
+      api.attendance.messSummary()
+    ])
+    const s=demand.summary
+    let html=`
+      <div class="demand-cards">
+        <div class="demand-card fade-up"><div class="demand-n" id="d-total" style="color:var(--color-primary);">0</div><div class="demand-l">Total today</div></div>
+        <div class="demand-card fade-up delay-1"><div class="demand-n" id="d-b" style="color:#C84B00;">0</div><div class="demand-l">Breakfast</div></div>
+        <div class="demand-card fade-up delay-2"><div class="demand-n" id="d-l" style="color:#FF6B35;">0</div><div class="demand-l">Lunch</div></div>
+        <div class="demand-card fade-up delay-3"><div class="demand-n" id="d-d" style="color:#10B981;">0</div><div class="demand-l">Dinner</div></div>
+      </div>
+      <div class="card fade-up delay-2" style="margin-bottom:16px;">
+        <div class="card-header"><span class="card-title">Students who marked today</span><span style="font-size:.8125rem;color:var(--color-text-muted);font-family:var(--font-mono);">${demand.logs.length} total</span></div>
+        ${demand.logs.length===0
+          ?`<div class="empty-state" style="padding:20px 0;"><h3 style="font-size:.9375rem;">No attendance yet</h3><p>Students haven't marked yet today.</p></div>`
+          :demand.logs.map(l=>`
+            <div class="student-row">
+              <div class="avatar avatar-sm">${utils.initials(l.subscription.user.name)}</div>
+              <div style="flex:1;"><div style="font-size:.875rem;font-weight:600;">${l.subscription.user.name}</div><div style="font-size:.75rem;color:var(--color-text-muted);">${l.subscription.plan.name}</div></div>
+              <span class="badge badge-neutral">${l.mealType.charAt(0)+l.mealType.slice(1).toLowerCase()}</span>
+              ${utils.statusBadge(l.status)}
+            </div>`).join('')}
+      </div>
+      <div class="card fade-up delay-3">
+        <div class="card-header"><span class="card-title">7-day trend</span></div>
+        <div style="overflow-x:auto;">
+          <table style="width:100%;border-collapse:collapse;font-size:.8125rem;">
+            <thead><tr>${['Date','Breakfast','Lunch','Dinner','Total'].map(h=>`<th style="text-align:left;padding:8px;border-bottom:1px solid var(--color-border);font-weight:600;color:var(--color-text-muted);">${h}</th>`).join('')}</tr></thead>
+            <tbody>${summary.map(d=>`<tr>
+              <td style="padding:8px;border-bottom:1px solid var(--color-border);font-family:var(--font-mono);font-size:.75rem;">${new Date(d.date).toLocaleDateString('en-IN',{day:'2-digit',month:'short'})}</td>
+              <td style="padding:8px;border-bottom:1px solid var(--color-border);">${d.BREAKFAST}</td>
+              <td style="padding:8px;border-bottom:1px solid var(--color-border);">${d.LUNCH}</td>
+              <td style="padding:8px;border-bottom:1px solid var(--color-border);">${d.DINNER}</td>
+              <td style="padding:8px;border-bottom:1px solid var(--color-border);font-weight:700;color:var(--color-primary);">${d.total}</td>
+            </tr>`).join('')}</tbody>
+          </table>
+        </div>
+      </div>`
+    document.getElementById('page-body').innerHTML=html
+    setTimeout(()=>{
+      utils.countUp(document.getElementById('d-total'),s.total)
+      utils.countUp(document.getElementById('d-b'),s.BREAKFAST||0)
+      utils.countUp(document.getElementById('d-l'),s.LUNCH||0)
+      utils.countUp(document.getElementById('d-d'),s.DINNER||0)
+    },200)
+  }catch(err){document.getElementById('page-body').innerHTML=`<div class="empty-state"><h3>Error</h3><p>${err.message}</p></div>`}
+}
+loadPage()
+</script>
+</body>
+</html>

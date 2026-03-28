@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mark Attendance — MessMitra</title>
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="stylesheet" href="/css/components.css">
+  <link rel="manifest" href="/manifest.json">
+  <style>
+    .attend-section {
+      text-align: center;
+      padding: 32px 16px;
+    }
+
+    .attend-title {
+      font-size: 1.125rem;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+
+    .attend-sub {
+      font-size: 0.875rem;
+      color: var(--color-text-secondary);
+      margin-bottom: 32px;
+    }
+
+    .meal-cards {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-bottom: 32px;
+      max-width: 500px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .meal-card {
+      background: var(--color-surface);
+      border: 2px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      padding: 20px 12px;
+      text-align: center;
+      cursor: pointer;
+      transition: var(--transition-spring);
+      position: relative;
+    }
+
+    .meal-card:hover:not(.disabled):not(.marked) {
+      border-color: var(--color-primary);
+      transform: translateY(-3px);
+    }
+
+    .meal-card.selected {
+      border-color: var(--color-primary);
+      background: var(--color-primary-light);
+    }
+
+    .meal-card.marked {
+      border-color: var(--color-emerald);
+      background: var(--color-success-light);
+      cursor: default;
+    }
+
+    .meal-card.disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+
+    .meal-card.closed {
+      border-color: var(--color-border);
+      background: var(--color-bg);
+      cursor: not-allowed;
+      opacity: 0.6;
+    }
+
+    .meal-icon {
+      font-size: 2rem;
+      margin-bottom: 8px;
+    }
+
+    .meal-name {
+      font-size: 0.875rem;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+
+    .meal-time {
+      font-size: 0.75rem;
+      color: var(--color-text-muted);
+      font-family: var(--font-mono);
+    }
+
+    .meal-status {
+      margin-top: 6px;
+    }
+
+    .attend-btn-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+      margin: 24px 0;
+    }
+
+    .attend-btn {
+      width: 96px;
+      height: 96px;
+      border-radius: 50%;
+      background: var(--color-primary);
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 8px 24px rgba(200, 75, 0, 0.35);
+      transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.3s, box-shadow 0.3s;
+      animation: glow 2s infinite;
+    }
+
+    .attend-btn:active {
+      transform: scale(0.9);
+    }
+
+    .attend-btn.marked {
+      background: var(--color-success);
+      animation: none;
+      box-shadow: 0 8px 24px rgba(16, 185, 129, 0.35);
+    }
+
+    .attend-btn.loading {
+      background: var(--color-text-muted);
+      animation: none;
+      cursor: wait;
+    }
+
+    .attend-btn svg {
+      width: 42px;
+      height: 42px;
+      stroke: #fff;
+      stroke-width: 2.5;
+      fill: none;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      transition: transform 0.3s;
+    }
+
+    .attend-check {
+      stroke-dasharray: 100;
+      stroke-dashoffset: 100;
+      transition: stroke-dashoffset 0.4s ease 0.1s;
+    }
+
+    .attend-btn.marked .attend-check {
+      stroke-dashoffset: 0;
+    }
+
+    .attend-btn-label {
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--color-text-primary);
+    }
+
+    .attend-btn-sub {
+      font-size: 0.8125rem;
+      color: var(--color-text-muted);
+    }
+
+    .cutoff-info {
+      background: var(--color-warning-light);
+      border: 1px solid #FDE68A;
+      border-radius: var(--radius-md);
+      padding: 10px 16px;
+      font-size: 0.8125rem;
+      color: var(--color-warning-text);
+      font-weight: 500;
+      margin-bottom: 16px;
+      display: inline-block;
+    }
+
+    .calendar-wrap {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      padding: 16px;
+      margin-top: 8px;
+    }
+
+    .cal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+
+    .cal-title {
+      font-size: 0.9375rem;
+      font-weight: 700;
+    }
+
+    .cal-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 4px;
+    }
+
+    .cal-day-label {
+      text-align: center;
+      font-size: 0.6875rem;
+      font-weight: 700;
+      color: var(--color-text-muted);
+      padding: 4px;
+    }
+
+    .cal-day {
+      text-align: center;
+      padding: 5px 2px;
+      border-radius: var(--radius-sm);
+      font-size: 0.8125rem;
+      font-family: var(--font-mono);
+      font-weight: 500;
+    }
+
+    .cal-day.present {
+      background: var(--color-success-light);
+      color: var(--color-success-text);
+      font-weight: 700;
+    }
+
+    .cal-day.absent {
+      background: var(--color-danger-light);
+      color: var(--color-danger-text);
+    }
+
+    .cal-day.today {
+      outline: 2px solid var(--color-primary);
+      outline-offset: 1px;
+    }
+
+    .cal-day.empty {
+      color: transparent;
+    }
+
+    @media (max-width: 400px) {
+      .meal-cards {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+
+<body class="page-student">
+<script>
+  const _t = localStorage.getItem('mm_token');
+  const _u = (() => { try { return JSON.parse(localStorage.getItem('mm_user')); } catch { return null; } })();
+  if (!_t || !_u) { window.location.replace('/login.html'); }
+</script>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="sidebar-logo">
+        <div class="sidebar-logo-mark">MessMitra</div>
+        <div class="sidebar-logo-sub">student portal</div>
+      </div>
+      <nav class="sidebar-nav">
+        <div class="sidebar-section-label">Menu</div>
+        <a href="/student/dashboard.html" class="sidebar-item">
+          <div class="sidebar-item-dot"></div>Dashboard
+        </a>
+        <a href="/student/attendance.html" class="sidebar-item active">
+          <div class="sidebar-item-dot"></div>Mark attendance
+        </a>
+        <a href="/student/menu.html" class="sidebar-item">
+          <div class="sidebar-item-dot"></div>Today's menu
+        </a>
+        <a href="/student/subscription.html" class="sidebar-item">
+          <div class="sidebar-item-dot"></div>My subscription
+        </a>
+        <a href="/student/delivery.html" class="sidebar-item">
+          <div class="sidebar-item-dot"></div>Delivery tracking
+        </a>
+        <div class="sidebar-section-label">Account</div>
+        <a href="/student/profile.html" class="sidebar-item">
+          <div class="sidebar-item-dot"></div>Profile
+        </a>
+      </nav>
+      <div class="sidebar-footer">
+        <div class="sidebar-user">
+          <div class="avatar avatar-sm" data-user-initials>?</div>
+          <div>
+            <div class="sidebar-user-name" data-user-name>Loading...</div>
+            <div class="sidebar-user-role">Student</div>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <div class="main-content">
+      <header class="topbar">
+        <div style="flex:1;font-size:1rem;font-weight:700;">Mark attendance</div>
+        <div id="current-time" style="font-family:var(--font-mono);font-size:0.875rem;color:var(--color-text-muted);">
+        </div>
+      </header>
+
+      <main class="page-content">
+        <div id="page-body">
+          <div class="skeleton" style="height:300px;border-radius:var(--radius-xl);"></div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <div class="bottom-tabs">
+    <div class="bottom-tabs-inner">
+      <a href="/student/dashboard.html" class="tab-item"><svg viewBox="0 0 22 22">
+          <rect x="2" y="2" width="8" height="8" rx="2" />
+          <rect x="12" y="2" width="8" height="8" rx="2" />
+          <rect x="2" y="12" width="8" height="8" rx="2" />
+          <rect x="12" y="12" width="8" height="8" rx="2" />
+        </svg><span>Home</span>
+        <div class="tab-dot"></div>
+      </a>
+      <a href="/student/attendance.html" class="tab-item active"><svg viewBox="0 0 22 22">
+          <circle cx="11" cy="11" r="9" />
+          <path d="M7 11l3 3 5-5" />
+        </svg><span>Attend</span>
+        <div class="tab-dot"></div>
+      </a>
+      <a href="/student/menu.html" class="tab-item"><svg viewBox="0 0 22 22">
+          <path d="M3 6h16M3 11h16M3 16h10" />
+        </svg><span>Menu</span>
+        <div class="tab-dot"></div>
+      </a>
+      <a href="/student/delivery.html" class="tab-item"><svg viewBox="0 0 22 22">
+          <path d="M3 11l4-7h8l4 7v4H3z" />
+          <circle cx="7" cy="18" r="2" />
+          <circle cx="15" cy="18" r="2" />
+        </svg><span>Delivery</span>
+        <div class="tab-dot"></div>
+      </a>
+      <a href="/student/profile.html" class="tab-item"><svg viewBox="0 0 22 22">
+          <circle cx="11" cy="7" r="4" />
+          <path d="M3 20c0-4 3.6-7 8-7s8 3 8 7" />
+        </svg><span>Profile</span>
+        <div class="tab-dot"></div>
+      </a>
+    </div>
+  </div>
+
+  <script src="/js/auth.js"></script>
+  <script src="/js/api.js"></script>
+  <script src="/js/utils.js"></script>
+  <script>
+    if (!auth.requireAuth(['STUDENT'])) { }
+    utils.fillUserInfo()
+    utils.registerSW()
+
+    let selectedMeal = null
+    let todayLogs = []
+    let mess = null
+
+    setInterval(() => {
+      document.getElementById('current-time').textContent = new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+    }, 1000)
+
+    const mealInfo = {
+      BREAKFAST: { icon: '🌅', label: 'Breakfast' },
+      LUNCH: { icon: '☀️', label: 'Lunch' },
+      DINNER: { icon: '🌙', label: 'Dinner' },
+    }
+
+    function isClosed(cutoff) {
+      if (!cutoff) return false
+      const now = new Date()
+      const [h, m] = cutoff.split(':').map(Number)
+      const cutoffDate = new Date(); cutoffDate.setHours(h, m, 0, 0)
+      return now > cutoffDate
+    }
+
+    function isMarked(meal) {
+      return todayLogs.some(l => l.mealType === meal)
+    }
+
+    function renderMeals() {
+      const meals = ['BREAKFAST', 'LUNCH', 'DINNER']
+      return meals.map(meal => {
+        const info = mealInfo[meal]
+        const cutoffKey = meal.toLowerCase() + 'Cutoff'
+        const cutoff = mess ? mess[cutoffKey] : null
+        const marked = isMarked(meal)
+        const closed = isClosed(cutoff)
+        const cls = marked ? 'marked' : (closed ? 'closed' : (selectedMeal === meal ? 'selected' : ''))
+        return `
+        <div class="meal-card ${cls}" onclick="selectMeal('${meal}')" data-meal="${meal}">
+          <div class="meal-icon">${info.icon}</div>
+          <div class="meal-name">${info.label}</div>
+          <div class="meal-time">${cutoff ? 'Cutoff: ' + cutoff : 'No cutoff'}</div>
+          <div class="meal-status">
+            ${marked ? `<span class="badge badge-success">Marked ✓</span>`
+            : closed ? `<span class="badge badge-neutral">Closed</span>`
+              : `<span class="badge badge-neutral">Open</span>`}
+          </div>
+        </div>`
+      }).join('')
+    }
+
+    function selectMeal(meal) {
+      if (isMarked(meal) || isClosed(mess ? mess[meal.toLowerCase() + 'Cutoff'] : null)) return
+      selectedMeal = meal
+      document.querySelectorAll('.meal-card').forEach(c => {
+        const m = c.dataset.meal
+        if (!isMarked(m) && !isClosed(mess ? mess[m.toLowerCase() + 'Cutoff'] : null)) {
+          c.classList.toggle('selected', m === meal)
+        }
+      })
+      document.getElementById('attend-label').textContent = `Mark ${meal.charAt(0) + meal.slice(1).toLowerCase()} present`
+      document.getElementById('attend-sub').textContent = 'Tap the button to confirm'
+    }
+
+    async function markAttendance() {
+      if (!selectedMeal) { utils.toast('Please select a meal first', 'warning'); return }
+      if (isMarked(selectedMeal)) { utils.toast('Already marked!', 'info'); return }
+
+      const btn = document.getElementById('attend-btn')
+      btn.classList.add('loading')
+      btn.onclick = null
+
+      try {
+        await api.attendance.mark({ mealType: selectedMeal })
+        todayLogs.push({ mealType: selectedMeal })
+        btn.classList.remove('loading')
+        btn.classList.add('marked')
+        document.getElementById('attend-label').textContent = 'Marked present!'
+        document.getElementById('attend-label').style.color = 'var(--color-success-text)'
+        document.getElementById('attend-sub').textContent = selectedMeal.charAt(0) + selectedMeal.slice(1).toLowerCase() + ' attendance confirmed'
+        utils.toast('Attendance marked for ' + selectedMeal.toLowerCase() + '!', 'success')
+        document.querySelectorAll('.meal-card').forEach(c => {
+          if (c.dataset.meal === selectedMeal) { c.classList.remove('selected'); c.classList.add('marked'); c.querySelector('.meal-status').innerHTML = '<span class="badge badge-success">Marked ✓</span>' }
+        })
+        selectedMeal = null
+        setTimeout(() => { btn.classList.remove('marked'); btn.onclick = markAttendance }, 1500)
+      } catch (err) {
+        btn.classList.remove('loading')
+        btn.onclick = markAttendance
+        utils.toast(err.message, 'error')
+      }
+    }
+
+    async function loadPage() {
+      try {
+        const [sub, logs, history] = await Promise.all([
+          api.subscriptions.me().catch(() => null),
+          api.attendance.today().catch(() => []),
+          api.attendance.me().catch(() => []),
+        ])
+        todayLogs = logs
+
+        if (!sub) {
+          document.getElementById('page-body').innerHTML = `
+          <div class="empty-state fade-up">
+            <div class="empty-state-icon">📋</div>
+            <h3>No active subscription</h3>
+            <p>Subscribe to a mess to mark attendance.</p>
+            <a href="/index.html" class="btn btn-primary" style="margin-top:12px;">Find a mess</a>
+          </div>`
+          return
+        }
+
+        mess = sub.plan.mess
+
+        const now = new Date()
+        const monthStart = new Date(now.getFullYear(), now.getMonth(), 1)
+        const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()
+        const firstDay = monthStart.getDay()
+        const presentDays = new Set(history.map(l => new Date(l.date).getDate()))
+
+        let calCells = ''
+        for (let i = 0; i < firstDay; i++) calCells += `<div class="cal-day empty"></div>`
+        for (let d = 1; d <= daysInMonth; d++) {
+          const isToday = d === now.getDate()
+          const present = presentDays.has(d)
+          calCells += `<div class="cal-day ${present ? 'present' : ''} ${isToday ? 'today' : ''}">${d}</div>`
+        }
+
+        document.getElementById('page-body').innerHTML = `
+        <div class="attend-section fade-up">
+          <div class="attend-title">Mark your attendance</div>
+          <div class="attend-sub">${new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' })}</div>
+          <div class="meal-cards">${renderMeals()}</div>
+          <div class="attend-btn-wrap">
+            <button class="attend-btn" id="attend-btn" onclick="markAttendance()">
+              <svg viewBox="0 0 42 42"><path class="attend-check" d="M10 21l8 8 14-16"/></svg>
+            </button>
+            <div>
+              <div class="attend-btn-label" id="attend-label">Select a meal above</div>
+              <div class="attend-btn-sub" id="attend-sub">Tap to mark present</div>
+            </div>
+          </div>
+        </div>
+        <div class="calendar-wrap fade-up delay-2">
+          <div class="cal-header">
+            <span class="cal-title">${now.toLocaleDateString('en-IN', { month: 'long', year: 'numeric' })}</span>
+            <span style="font-size:0.75rem;color:var(--color-text-muted);">${presentDays.size} days present</span>
+          </div>
+          <div class="cal-grid">
+            ${['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map(d => `<div class="cal-day-label">${d}</div>`).join('')}
+            ${calCells}
+          </div>
+        </div>`
+      } catch (err) {
+        document.getElementById('page-body').innerHTML = `<div class="empty-state"><h3>Error</h3><p>${err.message}</p></div>`
+      }
+    }
+
+    loadPage()
+  </script>
+</body>
+
+</html>

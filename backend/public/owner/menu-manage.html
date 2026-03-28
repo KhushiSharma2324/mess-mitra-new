@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Menu Management — MessMitra</title>
+<link rel="stylesheet" href="/css/main.css">
+<link rel="stylesheet" href="/css/components.css">
+<link rel="manifest" href="/manifest.json">
+<style>
+  .meal-section{margin-bottom:16px;}
+  .meal-head{display:flex;align-items:center;gap:8px;padding:10px 14px;background:var(--color-bg);border-radius:var(--radius-md);margin-bottom:8px;cursor:pointer;}
+  .meal-head-icon{font-size:1.125rem;}
+  .meal-head-title{font-size:.9375rem;font-weight:700;flex:1;}
+  .menu-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--color-border);}
+  .menu-row:last-child{border:none;}
+  .menu-row-name{flex:1;font-size:.9rem;font-weight:500;}
+  .menu-row-name.unavail{text-decoration:line-through;opacity:.5;}
+  .add-item-row{display:flex;gap:8px;margin-top:10px;}
+  .date-nav{display:flex;align-items:center;gap:8px;margin-bottom:16px;}
+  .date-btn{width:32px;height:32px;border-radius:50%;border:1.5px solid var(--color-border);background:var(--color-surface);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:.875rem;transition:var(--transition);}
+  .date-btn:hover{border-color:var(--color-primary);color:var(--color-primary);}
+  .date-label{flex:1;text-align:center;font-size:.9375rem;font-weight:600;}
+</style>
+</head>
+<body class="page-owner">
+<script>
+  const _t = localStorage.getItem('mm_token');
+  const _u = (() => { try { return JSON.parse(localStorage.getItem('mm_user')); } catch { return null; } })();
+  if (!_t || !_u) { window.location.replace('/login.html'); }
+</script>
+<div class="app-shell">
+  <aside class="sidebar">
+    <div class="sidebar-logo"><div class="sidebar-logo-mark">MessMitra</div><div class="sidebar-logo-sub">owner portal</div></div>
+    <nav class="sidebar-nav">
+      <a href="/owner/dashboard.html" class="sidebar-item"><div class="sidebar-item-dot"></div>Dashboard</a>
+      <a href="/owner/demand.html" class="sidebar-item"><div class="sidebar-item-dot"></div>Demand & attendance</a>
+      <a href="/owner/menu-manage.html" class="sidebar-item active"><div class="sidebar-item-dot"></div>Menu</a>
+      <a href="/owner/plans.html" class="sidebar-item"><div class="sidebar-item-dot"></div>Plans</a>
+      <a href="/owner/subscribers.html" class="sidebar-item"><div class="sidebar-item-dot"></div>Subscribers</a>
+      <a href="/owner/delivery-manage.html" class="sidebar-item"><div class="sidebar-item-dot"></div>Deliveries</a>
+      <a href="/owner/holidays.html" class="sidebar-item"><div class="sidebar-item-dot"></div>Holidays</a>
+      <a href="/owner/reviews.html" class="sidebar-item"><div class="sidebar-item-dot"></div>Reviews</a>
+      <a href="/owner/mess-setup.html" class="sidebar-item"><div class="sidebar-item-dot"></div>Mess setup</a>
+      <a href="/owner/profile.html" class="sidebar-item"><div class="sidebar-item-dot"></div>Profile</a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="sidebar-user">
+        <div class="avatar avatar-sm" data-user-initials>?</div>
+        <div><div class="sidebar-user-name" data-user-name></div><div class="sidebar-user-role">Owner</div></div>
+      </div>
+    </div>
+  </aside>
+  <div class="main-content">
+    <header class="topbar">
+      <div style="flex:1;font-size:1rem;font-weight:700;">Menu management</div>
+    </header>
+    <main class="page-content">
+      <div class="date-nav">
+        <button class="date-btn" onclick="changeDate(-1)">‹</button>
+        <div class="date-label" id="date-label"></div>
+        <button class="date-btn" onclick="changeDate(1)">›</button>
+      </div>
+      <div id="menu-body"><div class="skeleton" style="height:300px;"></div></div>
+    </main>
+  </div>
+</div>
+<script src="/js/auth.js"></script>
+<script src="/js/api.js"></script>
+<script src="/js/utils.js"></script>
+<script>
+if(!auth.requireAuth(['OWNER'])){}
+utils.fillUserInfo()
+utils.registerSW()
+
+let currentDate=new Date()
+let messId=null
+const foodColor={VEG:'#10B981',NONVEG:'#EF4444',EGG:'#F59E0B',VEGAN:'#10B981'}
+const meals=[{key:'BREAKFAST',icon:'🌅',label:'Breakfast'},{key:'LUNCH',icon:'☀️',label:'Lunch'},{key:'DINNER',icon:'🌙',label:'Dinner'}]
+
+function updateDateLabel(){
+  const today=new Date();today.setHours(0,0,0,0)
+  const cur=new Date(currentDate);cur.setHours(0,0,0,0)
+  const diff=Math.round((cur-today)/86400000)
+  document.getElementById('date-label').textContent=diff===0?'Today':diff===1?'Tomorrow':diff===-1?'Yesterday':currentDate.toLocaleDateString('en-IN',{weekday:'short',day:'numeric',month:'short'})
+}
+
+function changeDate(d){currentDate.setDate(currentDate.getDate()+d);updateDateLabel();loadMenu()}
+
+async function addItem(mealType){
+  const nameEl=document.getElementById(`new-name-${mealType}`)
+  const catEl=document.getElementById(`new-cat-${mealType}`)
+  const name=nameEl.value.trim()
+  const cat=catEl.value
+  if(!name||!cat){utils.toast('Enter item name and category','warning');return}
+  try{
+    await api.menu.create({itemName:name,mealType,foodCategory:cat,availableDate:currentDate.toISOString().split('T')[0]})
+    utils.toast('Item added!','success')
+    nameEl.value='';loadMenu()
+  }catch(err){utils.toast(err.message,'error')}
+}
+
+async function toggleItem(id){
+  try{await api.menu.toggle(id);loadMenu()}catch(err){utils.toast(err.message,'error')}
+}
+
+async function deleteItem(id){
+  try{await api.menu.delete(id);loadMenu()}catch(err){utils.toast(err.message,'error')}
+}
+
+async function loadMenu(){
+  if(!messId)return
+  document.getElementById('menu-body').innerHTML='<div class="skeleton" style="height:300px;"></div>'
+  try{
+    const dateStr=currentDate.toISOString().split('T')[0]
+    const menu=await api.menu.my(`date=${dateStr}`)
+    let html=''
+    meals.forEach(m=>{
+      const items=menu[m.key]||[]
+      html+=`
+        <div class="meal-section card fade-up">
+          <div class="meal-head">
+            <span class="meal-head-icon">${m.icon}</span>
+            <span class="meal-head-title">${m.label}</span>
+            <span style="font-size:.75rem;color:var(--color-text-muted);font-family:var(--font-mono);">${items.length} items</span>
+          </div>
+          ${items.map(item=>`
+            <div class="menu-row">
+              <div style="width:10px;height:10px;border-radius:50%;background:${item.isAvailable?foodColor[item.foodCategory]||'#888':'#ccc'};flex-shrink:0;"></div>
+              <span class="menu-row-name ${!item.isAvailable?'unavail':''}">${item.itemName}</span>
+              ${utils.foodBadge(item.foodCategory)}
+              <button class="btn btn-secondary btn-sm" onclick="toggleItem('${item.id}')">${item.isAvailable?'Hide':'Show'}</button>
+              <button class="btn btn-danger btn-sm" onclick="deleteItem('${item.id}')">×</button>
+            </div>`).join('')}
+          <div class="add-item-row">
+            <input class="form-input" id="new-name-${m.key}" placeholder="Add item..." style="flex:1;">
+            <select class="form-select" id="new-cat-${m.key}" style="width:120px;">
+              <option value="">Type</option>
+              <option value="VEG">Veg</option>
+              <option value="NONVEG">Non-veg</option>
+              <option value="EGG">Egg</option>
+            </select>
+            <button class="btn btn-primary btn-sm" onclick="addItem('${m.key}')">Add</button>
+          </div>
+        </div>`
+    })
+    document.getElementById('menu-body').innerHTML=html
+  }catch(err){document.getElementById('menu-body').innerHTML=`<div class="empty-state"><h3>Error</h3><p>${err.message}</p></div>`}
+}
+
+async function init(){
+  try{
+    const mess=await api.mess.my()
+    messId=mess.id
+    updateDateLabel()
+    loadMenu()
+  }catch{window.location.href='/owner/mess-setup.html'}
+}
+updateDateLabel()
+init()
+</script>
+</body>
+</html>

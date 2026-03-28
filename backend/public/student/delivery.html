@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Delivery Tracking — MessMitra</title>
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="stylesheet" href="/css/components.css">
+  <link rel="manifest" href="/manifest.json">
+  <style>
+    .delivery-card {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-xl);
+      padding: 20px;
+      margin-bottom: 16px;
+    }
+
+    .delivery-meal {
+      font-size: 1rem;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+
+    .delivery-date {
+      font-size: 0.8125rem;
+      color: var(--color-text-muted);
+      font-family: var(--font-mono);
+      margin-bottom: 16px;
+    }
+  </style>
+</head>
+
+<body class="page-student">
+<script>
+  const _t = localStorage.getItem('mm_token');
+  const _u = (() => { try { return JSON.parse(localStorage.getItem('mm_user')); } catch { return null; } })();
+  if (!_t || !_u) { window.location.replace('/login.html'); }
+</script>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="sidebar-logo">
+        <div class="sidebar-logo-mark">MessMitra</div>
+        <div class="sidebar-logo-sub">student portal</div>
+      </div>
+      <nav class="sidebar-nav">
+        <a href="/student/dashboard.html" class="sidebar-item">
+          <div class="sidebar-item-dot"></div>Dashboard
+        </a>
+        <a href="/student/attendance.html" class="sidebar-item">
+          <div class="sidebar-item-dot"></div>Mark attendance
+        </a>
+        <a href="/student/menu.html" class="sidebar-item">
+          <div class="sidebar-item-dot"></div>Today's menu
+        </a>
+        <a href="/student/subscription.html" class="sidebar-item">
+          <div class="sidebar-item-dot"></div>My subscription
+        </a>
+        <a href="/student/delivery.html" class="sidebar-item active">
+          <div class="sidebar-item-dot"></div>Delivery tracking
+        </a>
+        <a href="/student/profile.html" class="sidebar-item">
+          <div class="sidebar-item-dot"></div>Profile
+        </a>
+      </nav>
+      <div class="sidebar-footer">
+        <div class="sidebar-user">
+          <div class="avatar avatar-sm" data-user-initials>?</div>
+          <div>
+            <div class="sidebar-user-name" data-user-name></div>
+            <div class="sidebar-user-role">Student</div>
+          </div>
+        </div>
+      </div>
+    </aside>
+    <div class="main-content">
+      <header class="topbar">
+        <div style="flex:1;font-size:1rem;font-weight:700;">Delivery tracking</div>
+      </header>
+      <main class="page-content">
+        <div id="page-body">
+          <div class="skeleton" style="height:300px;border-radius:var(--radius-xl);"></div>
+        </div>
+      </main>
+    </div>
+  </div>
+  <div class="bottom-tabs">
+    <div class="bottom-tabs-inner">
+      <a href="/student/dashboard.html" class="tab-item"><svg viewBox="0 0 22 22">
+          <rect x="2" y="2" width="8" height="8" rx="2" />
+          <rect x="12" y="2" width="8" height="8" rx="2" />
+          <rect x="2" y="12" width="8" height="8" rx="2" />
+          <rect x="12" y="12" width="8" height="8" rx="2" />
+        </svg><span>Home</span>
+        <div class="tab-dot"></div>
+      </a>
+      <a href="/student/attendance.html" class="tab-item"><svg viewBox="0 0 22 22">
+          <circle cx="11" cy="11" r="9" />
+          <path d="M7 11l3 3 5-5" />
+        </svg><span>Attend</span>
+        <div class="tab-dot"></div>
+      </a>
+      <a href="/student/menu.html" class="tab-item"><svg viewBox="0 0 22 22">
+          <path d="M3 6h16M3 11h16M3 16h10" />
+        </svg><span>Menu</span>
+        <div class="tab-dot"></div>
+      </a>
+      <a href="/student/delivery.html" class="tab-item active"><svg viewBox="0 0 22 22">
+          <path d="M3 11l4-7h8l4 7v4H3z" />
+          <circle cx="7" cy="18" r="2" />
+          <circle cx="15" cy="18" r="2" />
+        </svg><span>Delivery</span>
+        <div class="tab-dot"></div>
+      </a>
+      <a href="/student/profile.html" class="tab-item"><svg viewBox="0 0 22 22">
+          <circle cx="11" cy="7" r="4" />
+          <path d="M3 20c0-4 3.6-7 8-7s8 3 8 7" />
+        </svg><span>Profile</span>
+        <div class="tab-dot"></div>
+      </a>
+    </div>
+  </div>
+  <script src="/js/auth.js"></script>
+  <script src="/js/api.js"></script>
+  <script src="/js/utils.js"></script>
+  <script>
+    if (!auth.requireAuth(['STUDENT'])) { }
+    utils.fillUserInfo()
+    utils.registerSW()
+
+    const statusSteps = ['PENDING', 'ASSIGNED', 'PICKED_UP', 'DELIVERED']
+    const stepLabels = { PENDING: 'Order created', ASSIGNED: 'Partner assigned', PICKED_UP: 'Meal picked up', DELIVERED: 'Delivered!' }
+    const stepSubs = { PENDING: 'Waiting for delivery assignment', ASSIGNED: 'Partner is on the way to mess', PICKED_UP: 'Your meal is on its way', DELIVERED: 'Enjoy your meal!' }
+
+    function renderTimeline(order) {
+      const curIdx = statusSteps.indexOf(order.status)
+      return statusSteps.map((step, i) => {
+        const done = i < curIdx || order.status === 'DELIVERED'
+        const active = i === curIdx && order.status !== 'DELIVERED'
+        return `
+        <div class="timeline-item ${done ? 'done' : ''} ${active ? 'active' : ''}">
+          <div class="timeline-dot">${done ? '✓' : i + 1}</div>
+          <div class="timeline-body">
+            <div class="timeline-title">${stepLabels[step]}</div>
+            <div class="timeline-sub">${active ? stepSubs[step] : (done ? 'Completed' : 'Waiting')}</div>
+          </div>
+        </div>`
+      }).join('')
+    }
+
+    async function loadPage() {
+      try {
+        const sub = await api.subscriptions.me().catch(() => null)
+        if (!sub) {
+          document.getElementById('page-body').innerHTML = `<div class="empty-state fade-up"><div class="empty-state-icon">📦</div><h3>No subscription</h3><p>Subscribe to a mess to track deliveries.</p><a href="/index.html" class="btn btn-primary" style="margin-top:12px;">Find a mess</a></div>`
+          return
+        }
+
+        const attLogs = await api.attendance.today().catch(() => [])
+        if (attLogs.length === 0) {
+          document.getElementById('page-body').innerHTML = `<div class="empty-state fade-up"><div class="empty-state-icon">⏰</div><h3>No attendance today</h3><p>Mark attendance first to get delivery.</p><a href="/student/attendance.html" class="btn btn-primary" style="margin-top:12px;">Mark now</a></div>`
+          return
+        }
+
+        let html = ''
+        for (const log of attLogs) {
+          const mealLabel = log.mealType.charAt(0) + log.mealType.slice(1).toLowerCase()
+          if (!log.deliveryOrder) {
+            html += `
+            <div class="delivery-card fade-up">
+              <div class="delivery-meal">${mealLabel}</div>
+              <div class="delivery-date">${utils.formatDate(log.date)}</div>
+              <div class="empty-state" style="padding:16px 0;"><h3 style="font-size:0.9375rem;">Order not generated yet</h3><p>Owner will generate delivery orders soon.</p></div>
+            </div>`
+          } else {
+            const order = log.deliveryOrder
+            html += `
+            <div class="delivery-card fade-up">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+                <div class="delivery-meal">${mealLabel}</div>
+                ${utils.statusBadge(order.status)}
+              </div>
+              <div class="delivery-date">${utils.formatDate(log.date)}</div>
+              <div class="timeline">${renderTimeline(order)}</div>
+              ${order.partner ? `
+                <div style="margin-top:14px;padding:10px 12px;background:var(--color-bg);border-radius:var(--radius-md);display:flex;align-items:center;gap:10px;">
+                  <div class="avatar avatar-sm">${utils.initials(order.partner.name)}</div>
+                  <div><div style="font-size:0.875rem;font-weight:600;">${order.partner.name}</div><div style="font-size:0.75rem;color:var(--color-text-muted);">Delivery partner</div></div>
+                  <a href="tel:${order.partner.phone}" class="btn btn-secondary btn-sm" style="margin-left:auto;">Call</a>
+                </div>` : ''}
+              ${order.status === 'DELIVERED' ? `
+                <a href="/student/review.html?orderId=${order.id}" class="btn btn-primary btn-full" style="margin-top:12px;">Leave a review</a>` : ''}
+            </div>`
+          }
+        }
+
+        document.getElementById('page-body').innerHTML = html || `<div class="empty-state"><h3>No deliveries</h3></div>`
+      } catch (err) {
+        document.getElementById('page-body').innerHTML = `<div class="empty-state"><h3>Error</h3><p>${err.message}</p></div>`
+      }
+    }
+
+    loadPage()
+  </script>
+</body>
+
+</html>

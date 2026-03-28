@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard — MessMitra</title>
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="stylesheet" href="/css/components.css">
+  <link rel="manifest" href="/manifest.json">
+  <style>
+    .greeting-card {
+      background: linear-gradient(135deg, #0C2340 0%, #1a3a5c 100%);
+      border-radius: var(--radius-xl);
+      padding: 24px;
+      margin-bottom: 16px;
+      color: #fff;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .greeting-bg {
+      position: absolute;
+      right: -10px;
+      top: -10px;
+      font-size: 5rem;
+      opacity: 0.08;
+      pointer-events: none;
+    }
+
+    .greeting-name {
+      font-size: 1.25rem;
+      font-weight: 800;
+      margin-bottom: 4px;
+    }
+
+    .greeting-sub {
+      font-size: 0.875rem;
+      color: #94A3B8;
+    }
+
+    .greeting-mess {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 12px;
+      background: rgba(200, 75, 0, 0.2);
+      border: 1px solid rgba(200, 75, 0, 0.4);
+      border-radius: var(--radius-full);
+      padding: 5px 14px;
+      font-size: 0.8125rem;
+      font-weight: 600;
+      color: #FF6B35;
+    }
+
+    .quick-stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+
+    .q-stat {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      padding: 14px;
+      text-align: center;
+    }
+
+    .q-stat-n {
+      font-size: 1.375rem;
+      font-weight: 800;
+      font-family: var(--font-mono);
+      color: var(--color-primary);
+    }
+
+    .q-stat-l {
+      font-size: 0.6875rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: .05em;
+      color: var(--color-text-muted);
+      margin-top: 3px;
+    }
+
+    .menu-preview {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      padding: 16px;
+      margin-bottom: 16px;
+    }
+
+    .menu-item-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 0;
+      border-bottom: 1px solid var(--color-border);
+    }
+
+    .menu-item-row:last-child {
+      border: none;
+    }
+
+    .food-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .delivery-status {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      padding: 16px;
+      margin-bottom: 16px;
+    }
+
+    .no-sub-card {
+      background: linear-gradient(135deg, #FFF7ED, #FFEDD5);
+      border: 1.5px dashed #FED7AA;
+      border-radius: var(--radius-xl);
+      padding: 32px;
+      text-align: center;
+    }
+
+    .no-sub-icon {
+      font-size: 3rem;
+      margin-bottom: 12px;
+    }
+
+    .live-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--color-emerald);
+      display: inline-block;
+      margin-right: 5px;
+      animation: pulse 1.5s infinite;
+    }
+  </style>
+</head>
+
+<body class="page-student">
+<script>
+  const _t = localStorage.getItem('mm_token');
+  const _u = (() => { try { return JSON.parse(localStorage.getItem('mm_user')); } catch { return null; } })();
+  if (!_t || !_u) { window.location.replace('/login.html'); }
+</script>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="sidebar-logo">
+        <div class="sidebar-logo-mark">MessMitra</div>
+        <div class="sidebar-logo-sub">student portal</div>
+      </div>
+      <nav class="sidebar-nav">
+        <div class="sidebar-section-label">Menu</div>
+        <a href="/student/dashboard.html" class="sidebar-item active">
+          <div class="sidebar-item-dot"></div>Dashboard
+        </a>
+        <a href="/student/attendance.html" class="sidebar-item">
+          <div class="sidebar-item-dot"></div>Mark attendance
+        </a>
+        <a href="/student/menu.html" class="sidebar-item">
+          <div class="sidebar-item-dot"></div>Today's menu
+        </a>
+        <a href="/student/subscription.html" class="sidebar-item">
+          <div class="sidebar-item-dot"></div>My subscription
+        </a>
+        <a href="/student/delivery.html" class="sidebar-item">
+          <div class="sidebar-item-dot"></div>Delivery tracking
+        </a>
+        <div class="sidebar-section-label">Account</div>
+        <a href="/student/profile.html" class="sidebar-item">
+          <div class="sidebar-item-dot"></div>Profile
+        </a>
+      </nav>
+      <div class="sidebar-footer">
+        <div class="sidebar-user">
+          <div class="avatar avatar-sm" data-user-initials>?</div>
+          <div>
+            <div class="sidebar-user-name" data-user-name>Loading...</div>
+            <div class="sidebar-user-role">Student</div>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <div class="main-content">
+      <header class="topbar">
+        <div style="flex:1">
+          <div style="font-size:1rem;font-weight:700;" data-user-name>Dashboard</div>
+          <div style="font-size:0.75rem;color:var(--color-text-muted);" id="topbar-date"></div>
+        </div>
+        <a href="/student/attendance.html" class="btn btn-primary btn-sm">Mark attendance</a>
+      </header>
+
+      <main class="page-content">
+        <div id="page-body">
+          <div class="skeleton" style="height:160px;margin-bottom:16px;border-radius:var(--radius-xl);"></div>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px;">
+            <div class="skeleton" style="height:90px;border-radius:var(--radius-lg);"></div>
+            <div class="skeleton" style="height:90px;border-radius:var(--radius-lg);"></div>
+            <div class="skeleton" style="height:90px;border-radius:var(--radius-lg);"></div>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <div class="bottom-tabs">
+    <div class="bottom-tabs-inner">
+      <a href="/student/dashboard.html" class="tab-item active">
+        <svg viewBox="0 0 22 22">
+          <rect x="2" y="2" width="8" height="8" rx="2" />
+          <rect x="12" y="2" width="8" height="8" rx="2" />
+          <rect x="2" y="12" width="8" height="8" rx="2" />
+          <rect x="12" y="12" width="8" height="8" rx="2" />
+        </svg>
+        <span>Home</span>
+        <div class="tab-dot"></div>
+      </a>
+      <a href="/student/attendance.html" class="tab-item">
+        <svg viewBox="0 0 22 22">
+          <circle cx="11" cy="11" r="9" />
+          <path d="M7 11l3 3 5-5" />
+        </svg>
+        <span>Attend</span>
+        <div class="tab-dot"></div>
+      </a>
+      <a href="/student/menu.html" class="tab-item">
+        <svg viewBox="0 0 22 22">
+          <path d="M3 6h16M3 11h16M3 16h10" />
+        </svg>
+        <span>Menu</span>
+        <div class="tab-dot"></div>
+      </a>
+      <a href="/student/delivery.html" class="tab-item">
+        <svg viewBox="0 0 22 22">
+          <path d="M3 11l4-7h8l4 7v4H3z" />
+          <circle cx="7" cy="18" r="2" />
+          <circle cx="15" cy="18" r="2" />
+        </svg>
+        <span>Delivery</span>
+        <div class="tab-dot"></div>
+      </a>
+      <a href="/student/profile.html" class="tab-item">
+        <svg viewBox="0 0 22 22">
+          <circle cx="11" cy="7" r="4" />
+          <path d="M3 20c0-4 3.6-7 8-7s8 3 8 7" />
+        </svg>
+        <span>Profile</span>
+        <div class="tab-dot"></div>
+      </a>
+    </div>
+  </div>
+
+  <script src="/js/auth.js"></script>
+  <script src="/js/api.js"></script>
+  <script src="/js/utils.js"></script>
+  <script>
+    if (!auth.requireAuth(['STUDENT'])) { }
+    utils.fillUserInfo()
+    utils.registerSW()
+
+    document.getElementById('topbar-date').textContent = new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' })
+
+    const foodColor = { VEG: '#10B981', NONVEG: '#EF4444', EGG: '#F59E0B', VEGAN: '#10B981' }
+
+    async function loadDashboard() {
+      try {
+        const [sub, todayAtt] = await Promise.all([
+          api.subscriptions.me().catch(() => null),
+          api.attendance.today().catch(() => []),
+        ])
+
+        const user = auth.getUser()
+        let html = ''
+
+        html += `
+        <div class="greeting-card fade-up">
+          <div class="greeting-bg">🍱</div>
+          <div class="greeting-name">Good ${getGreeting()}, ${user.name.split(' ')[0]}!</div>
+          <div class="greeting-sub">${new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' })}</div>
+          ${sub ? `<div class="greeting-mess">🍽 ${sub.plan.mess.name}</div>` : ''}
+        </div>`
+
+        if (!sub) {
+          html += `
+          <div class="no-sub-card fade-up delay-1">
+            <div class="no-sub-icon">🔍</div>
+            <h3 style="font-size:1.125rem;font-weight:700;margin-bottom:6px;">No active subscription</h3>
+            <p style="margin-bottom:16px;">Find a mess and subscribe to start getting meals.</p>
+            <a href="/index.html" class="btn btn-primary">Browse mess providers</a>
+          </div>`
+        } else {
+          const daysLeft = sub.endDate ? Math.max(0, Math.ceil((new Date(sub.endDate) - new Date()) / 86400000)) : '—'
+          const markedToday = todayAtt.length > 0
+
+          html += `
+          <div class="quick-stats">
+            <div class="q-stat fade-up delay-1">
+              <div class="q-stat-n" id="days-left">—</div>
+              <div class="q-stat-l">Days left</div>
+            </div>
+            <div class="q-stat fade-up delay-2">
+              <div class="q-stat-n" style="color:${markedToday ? 'var(--color-emerald)' : 'var(--color-warning)'};">${markedToday ? '✓' : '—'}</div>
+              <div class="q-stat-l">Today</div>
+            </div>
+            <div class="q-stat fade-up delay-3">
+              <div class="q-stat-n" id="attend-count">—</div>
+              <div class="q-stat-l">This month</div>
+            </div>
+          </div>`
+
+          if (typeof daysLeft === 'number') {
+            setTimeout(() => utils.countUp(document.getElementById('days-left'), daysLeft), 300)
+          }
+
+          const menu = await api.menu.byMess(sub.plan.mess.id).catch(() => ({ BREAKFAST: [], LUNCH: [], DINNER: [] }))
+          const attHistory = await api.attendance.me().catch(() => [])
+          setTimeout(() => utils.countUp(document.getElementById('attend-count'), attHistory.length), 400)
+
+          const allItems = [...(menu.BREAKFAST || []), ...(menu.LUNCH || []), ...(menu.DINNER || [])]
+          html += `
+          <div class="menu-preview fade-up delay-2">
+            <div class="card-header">
+              <span class="card-title"><span class="live-dot"></span>Today's menu</span>
+              <a href="/student/menu.html" class="card-action">View all →</a>
+            </div>
+            ${allItems.length === 0
+              ? `<div style="text-align:center;padding:16px;color:var(--color-text-muted);font-size:0.875rem;">No menu published yet</div>`
+              : allItems.slice(0, 4).map(i => `
+                <div class="menu-item-row">
+                  <div class="food-dot" style="background:${foodColor[i.foodCategory] || '#888'};"></div>
+                  <span style="flex:1;font-size:0.9rem;font-weight:500;">${i.itemName}</span>
+                  <span style="font-size:0.75rem;color:var(--color-text-muted);">${i.mealType.charAt(0) + i.mealType.slice(1).toLowerCase()}</span>
+                  ${utils.foodBadge(i.foodCategory)}
+                </div>`).join('')}
+          </div>`
+
+          if (!markedToday) {
+            html += `
+            <div class="card fade-up delay-3" style="border-color:var(--color-primary);background:var(--color-primary-light);">
+              <div style="display:flex;align-items:center;gap:12px;">
+                <div style="font-size:1.5rem;">⏰</div>
+                <div style="flex:1;">
+                  <div style="font-weight:700;font-size:0.9375rem;color:var(--color-primary);">Mark attendance today!</div>
+                  <div style="font-size:0.8125rem;color:var(--color-text-secondary);">Don't miss your meal — mark before cutoff time.</div>
+                </div>
+                <a href="/student/attendance.html" class="btn btn-primary btn-sm">Mark now</a>
+              </div>
+            </div>`
+          }
+        }
+
+        document.getElementById('page-body').innerHTML = html
+        utils.initRipples()
+      } catch (err) {
+        document.getElementById('page-body').innerHTML = `<div class="empty-state"><div class="empty-state-icon">⚠️</div><h3>Failed to load</h3><p>${err.message}</p></div>`
+      }
+    }
+
+    function getGreeting() {
+      const h = new Date().getHours()
+      if (h < 12) return 'morning'
+      if (h < 17) return 'afternoon'
+      return 'evening'
+    }
+
+    loadDashboard()
+  </script>
+</body>
+
+</html>

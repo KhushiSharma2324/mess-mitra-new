@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Plans — MessMitra</title>
+<link rel="stylesheet" href="/css/main.css">
+<link rel="stylesheet" href="/css/components.css">
+<link rel="manifest" href="/manifest.json">
+<style>
+  .plan-card{background:var(--color-surface);border:1.5px solid var(--color-border);border-radius:var(--radius-lg);padding:16px;margin-bottom:10px;transition:var(--transition);}
+  .plan-card.inactive{opacity:.6;}
+  .plan-card-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:8px;}
+  .plan-name{font-size:.9375rem;font-weight:700;}
+  .plan-price{font-size:1.25rem;font-weight:800;font-family:var(--font-mono);color:var(--color-primary);}
+  .plan-price span{font-size:.75rem;font-weight:400;color:var(--color-text-muted);font-family:var(--font-display);}
+  .plan-tags{display:flex;flex-wrap:wrap;gap:5px;margin:8px 0;}
+  .plan-slots{margin-top:8px;}
+  .slots-bar{background:var(--color-bg);border-radius:99px;height:5px;overflow:hidden;margin-top:4px;}
+  .slots-fill{height:100%;border-radius:99px;background:var(--color-primary);transition:width .8s cubic-bezier(.34,1.2,.64,1);}
+  .plan-actions{display:flex;gap:6px;margin-top:10px;}
+  .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;z-index:500;padding:16px;}
+  .form-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  .checkbox-group{display:flex;flex-wrap:wrap;gap:8px;}
+  .checkbox-pill{display:flex;align-items:center;gap:5px;padding:6px 12px;border-radius:var(--radius-full);border:1.5px solid var(--color-border);background:var(--color-surface);cursor:pointer;font-size:.8125rem;font-weight:600;transition:var(--transition);}
+  .checkbox-pill input{display:none;}
+  .checkbox-pill.checked{background:var(--color-primary-light);border-color:var(--color-primary);color:var(--color-primary);}
+</style>
+</head>
+<body class="page-owner">
+<script>
+  const _t = localStorage.getItem('mm_token');
+  const _u = (() => { try { return JSON.parse(localStorage.getItem('mm_user')); } catch { return null; } })();
+  if (!_t || !_u) { window.location.replace('/login.html'); }
+</script>
+<div class="app-shell">
+  <aside class="sidebar">
+    <div class="sidebar-logo"><div class="sidebar-logo-mark">MessMitra</div><div class="sidebar-logo-sub">owner portal</div></div>
+    <nav class="sidebar-nav">
+      <a href="/owner/dashboard.html" class="sidebar-item"><div class="sidebar-item-dot"></div>Dashboard</a>
+      <a href="/owner/demand.html" class="sidebar-item"><div class="sidebar-item-dot"></div>Demand & attendance</a>
+      <a href="/owner/menu-manage.html" class="sidebar-item"><div class="sidebar-item-dot"></div>Menu</a>
+      <a href="/owner/plans.html" class="sidebar-item active"><div class="sidebar-item-dot"></div>Plans</a>
+      <a href="/owner/subscribers.html" class="sidebar-item"><div class="sidebar-item-dot"></div>Subscribers</a>
+      <a href="/owner/delivery-manage.html" class="sidebar-item"><div class="sidebar-item-dot"></div>Deliveries</a>
+      <a href="/owner/holidays.html" class="sidebar-item"><div class="sidebar-item-dot"></div>Holidays</a>
+      <a href="/owner/reviews.html" class="sidebar-item"><div class="sidebar-item-dot"></div>Reviews</a>
+      <a href="/owner/mess-setup.html" class="sidebar-item"><div class="sidebar-item-dot"></div>Mess setup</a>
+      <a href="/owner/profile.html" class="sidebar-item"><div class="sidebar-item-dot"></div>Profile</a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="sidebar-user">
+        <div class="avatar avatar-sm" data-user-initials>?</div>
+        <div><div class="sidebar-user-name" data-user-name></div><div class="sidebar-user-role">Owner</div></div>
+      </div>
+    </div>
+  </aside>
+  <div class="main-content">
+    <header class="topbar">
+      <div style="flex:1;font-size:1rem;font-weight:700;">Plans</div>
+      <button class="btn btn-primary btn-sm" onclick="openModal()">+ Add plan</button>
+    </header>
+    <main class="page-content">
+      <div id="plans-list"><div class="skeleton" style="height:140px;border-radius:var(--radius-lg);margin-bottom:10px;"></div><div class="skeleton" style="height:140px;border-radius:var(--radius-lg);"></div></div>
+    </main>
+  </div>
+</div>
+
+<div id="plan-modal" style="display:none;">
+  <div class="modal-overlay" onclick="if(event.target===this)closeModal()">
+    <div class="modal">
+      <div class="modal-header">
+        <span class="modal-title" id="modal-title">Add plan</span>
+        <button class="modal-close" onclick="closeModal()">×</button>
+      </div>
+      <div class="form-group"><label class="form-label">Plan name <span>*</span></label><input class="form-input" id="m-name" placeholder="e.g. Full Day Veg"></div>
+      <div class="form-group">
+        <label class="form-label">Meal types <span>*</span></label>
+        <div class="checkbox-group">
+          <label class="checkbox-pill" id="pill-B" onclick="toggleMeal('BREAKFAST','pill-B')"><input type="checkbox" value="BREAKFAST">Breakfast</label>
+          <label class="checkbox-pill" id="pill-L" onclick="toggleMeal('LUNCH','pill-L')"><input type="checkbox" value="LUNCH">Lunch</label>
+          <label class="checkbox-pill" id="pill-D" onclick="toggleMeal('DINNER','pill-D')"><input type="checkbox" value="DINNER">Dinner</label>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Food category <span>*</span></label>
+          <select class="form-select" id="m-food"><option value="">Select</option><option value="VEG">Veg</option><option value="NONVEG">Non-veg</option><option value="EGG">Egg</option><option value="VEGAN">Vegan</option></select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Duration <span>*</span></label>
+          <select class="form-select" id="m-duration"><option value="">Select</option><option value="WEEKLY">Weekly</option><option value="MONTHLY">Monthly</option><option value="CUSTOM">Custom</option></select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Price (₹) <span>*</span></label><input class="form-input" type="number" id="m-price" placeholder="3000"></div>
+        <div class="form-group"><label class="form-label">Max slots <span>*</span></label><input class="form-input" type="number" id="m-slots" placeholder="50"></div>
+      </div>
+      <div class="form-group"><label class="form-label">Description</label><input class="form-input" id="m-desc" placeholder="What's included..."></div>
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-secondary flex-1" onclick="closeModal()">Cancel</button>
+        <button class="btn btn-primary flex-1" id="modal-save-btn" onclick="savePlan()">Create plan</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="/js/auth.js"></script>
+<script src="/js/api.js"></script>
+<script src="/js/utils.js"></script>
+<script>
+if(!auth.requireAuth(['OWNER'])){}
+utils.fillUserInfo()
+utils.registerSW()
+
+let editPlanId=null
+let selectedMeals=[]
+
+function toggleMeal(meal,pillId){
+  event.preventDefault()
+  const idx=selectedMeals.indexOf(meal)
+  if(idx>-1)selectedMeals.splice(idx,1)
+  else selectedMeals.push(meal)
+  document.getElementById(pillId).classList.toggle('checked',selectedMeals.includes(meal))
+}
+
+function openModal(plan=null){
+  editPlanId=null; selectedMeals=[]
+  document.getElementById('m-name').value=''
+  document.getElementById('m-food').value=''
+  document.getElementById('m-duration').value=''
+  document.getElementById('m-price').value=''
+  document.getElementById('m-slots').value=''
+  document.getElementById('m-desc').value=''
+  ;['pill-B','pill-L','pill-D'].forEach(id=>document.getElementById(id).classList.remove('checked'))
+  if(plan){
+    editPlanId=plan.id
+    document.getElementById('modal-title').textContent='Edit plan'
+    document.getElementById('modal-save-btn').textContent='Update plan'
+    document.getElementById('m-name').value=plan.name
+    document.getElementById('m-food').value=plan.foodCategory
+    document.getElementById('m-duration').value=plan.duration
+    document.getElementById('m-price').value=plan.price
+    document.getElementById('m-slots').value=plan.maxSlots
+    document.getElementById('m-desc').value=plan.description||''
+    selectedMeals=[...plan.mealTypes]
+    if(plan.mealTypes.includes('BREAKFAST'))document.getElementById('pill-B').classList.add('checked')
+    if(plan.mealTypes.includes('LUNCH'))document.getElementById('pill-L').classList.add('checked')
+    if(plan.mealTypes.includes('DINNER'))document.getElementById('pill-D').classList.add('checked')
+  }else{
+    document.getElementById('modal-title').textContent='Add plan'
+    document.getElementById('modal-save-btn').textContent='Create plan'
+  }
+  document.getElementById('plan-modal').style.display='block'
+}
+
+function closeModal(){document.getElementById('plan-modal').style.display='none'}
+
+async function savePlan(){
+  const body={
+    name:document.getElementById('m-name').value.trim(),
+    mealTypes:selectedMeals,
+    foodCategory:document.getElementById('m-food').value,
+    duration:document.getElementById('m-duration').value,
+    price:Number(document.getElementById('m-price').value),
+    maxSlots:Number(document.getElementById('m-slots').value),
+    description:document.getElementById('m-desc').value.trim()||undefined,
+  }
+  if(!body.name||selectedMeals.length===0||!body.foodCategory||!body.duration||!body.price||!body.maxSlots){
+    utils.toast('Please fill all required fields','warning');return
+  }
+  try{
+    editPlanId?await api.plans.update(editPlanId,body):await api.plans.create(body)
+    utils.toast(editPlanId?'Plan updated!':'Plan created!','success')
+    closeModal(); loadPlans()
+  }catch(err){utils.toast(err.message,'error')}
+}
+
+async function togglePlan(id){
+  try{await api.plans.toggle(id);loadPlans()}catch(err){utils.toast(err.message,'error')}
+}
+
+async function deletePlan(id){
+  if(!utils.confirmDialog('Delete this plan? This cannot be undone.'))return
+  try{await api.plans.delete(id);utils.toast('Plan deleted','success');loadPlans()}catch(err){utils.toast(err.message,'error')}
+}
+
+async function loadPlans(){
+  try{
+    const plans=await api.plans.my()
+    if(plans.length===0){
+      document.getElementById('plans-list').innerHTML=`<div class="empty-state fade-up"><div class="empty-state-icon">📋</div><h3>No plans yet</h3><p>Create your first meal plan.</p><button class="btn btn-primary" onclick="openModal()" style="margin-top:12px;">Add plan</button></div>`
+      return
+    }
+    document.getElementById('plans-list').innerHTML=plans.map((p,i)=>`
+      <div class="plan-card ${p.isActive?'':'inactive'} fade-up" style="animation-delay:${i*.06}s;">
+        <div class="plan-card-top">
+          <div>
+            <div class="plan-name">${p.name}</div>
+            <div class="plan-price">₹${Number(p.price).toLocaleString('en-IN')} <span>/ ${p.duration.toLowerCase()}</span></div>
+          </div>
+          ${p.isActive?'<span class="badge badge-success">Active</span>':'<span class="badge badge-neutral">Inactive</span>'}
+        </div>
+        <div class="plan-tags">
+          ${p.mealTypes.map(m=>`<span class="badge badge-neutral">${m.charAt(0)+m.slice(1).toLowerCase()}</span>`).join('')}
+          ${utils.foodBadge(p.foodCategory)}
+        </div>
+        <div class="plan-slots">
+          <div style="display:flex;justify-content:space-between;font-size:.75rem;color:var(--color-text-muted);margin-bottom:3px;">
+            <span>Slots</span><span style="font-family:var(--font-mono);">${p.currentSlots} / ${p.maxSlots}</span>
+          </div>
+          <div class="slots-bar"><div class="slots-fill" style="width:${Math.round((p.currentSlots/p.maxSlots)*100)}%;"></div></div>
+        </div>
+        <div class="plan-actions">
+          <button class="btn btn-secondary btn-sm" onclick='openModal(${JSON.stringify(p)})'>Edit</button>
+          <button class="btn btn-secondary btn-sm" onclick="togglePlan('${p.id}')">${p.isActive?'Deactivate':'Activate'}</button>
+          <button class="btn btn-danger btn-sm" onclick="deletePlan('${p.id}')">Delete</button>
+        </div>
+      </div>`).join('')
+  }catch(err){document.getElementById('plans-list').innerHTML=`<div class="empty-state"><h3>Error</h3><p>${err.message}</p></div>`}
+}
+loadPlans()
+</script>
+</body>
+</html>

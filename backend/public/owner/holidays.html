@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Holidays — MessMitra</title>
+<link rel="stylesheet" href="/css/main.css">
+<link rel="stylesheet" href="/css/components.css">
+<link rel="manifest" href="/manifest.json">
+</head>
+<body class="page-owner">
+<script>
+  const _t = localStorage.getItem('mm_token');
+  const _u = (() => { try { return JSON.parse(localStorage.getItem('mm_user')); } catch { return null; } })();
+  if (!_t || !_u) { window.location.replace('/login.html'); }
+</script>
+<div class="app-shell">
+  <aside class="sidebar">
+    <div class="sidebar-logo"><div class="sidebar-logo-mark">MessMitra</div><div class="sidebar-logo-sub">owner portal</div></div>
+    <nav class="sidebar-nav">
+      <a href="/owner/dashboard.html" class="sidebar-item"><div class="sidebar-item-dot"></div>Dashboard</a>
+      <a href="/owner/demand.html" class="sidebar-item"><div class="sidebar-item-dot"></div>Demand & attendance</a>
+      <a href="/owner/menu-manage.html" class="sidebar-item"><div class="sidebar-item-dot"></div>Menu</a>
+      <a href="/owner/plans.html" class="sidebar-item"><div class="sidebar-item-dot"></div>Plans</a>
+      <a href="/owner/subscribers.html" class="sidebar-item"><div class="sidebar-item-dot"></div>Subscribers</a>
+      <a href="/owner/delivery-manage.html" class="sidebar-item"><div class="sidebar-item-dot"></div>Deliveries</a>
+      <a href="/owner/holidays.html" class="sidebar-item active"><div class="sidebar-item-dot"></div>Holidays</a>
+      <a href="/owner/reviews.html" class="sidebar-item"><div class="sidebar-item-dot"></div>Reviews</a>
+      <a href="/owner/mess-setup.html" class="sidebar-item"><div class="sidebar-item-dot"></div>Mess setup</a>
+      <a href="/owner/profile.html" class="sidebar-item"><div class="sidebar-item-dot"></div>Profile</a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="sidebar-user">
+        <div class="avatar avatar-sm" data-user-initials>?</div>
+        <div><div class="sidebar-user-name" data-user-name></div><div class="sidebar-user-role">Owner</div></div>
+      </div>
+    </div>
+  </aside>
+  <div class="main-content">
+    <header class="topbar">
+      <div style="flex:1;font-size:1rem;font-weight:700;">Holidays</div>
+    </header>
+    <main class="page-content" style="max-width:560px;">
+      <div class="card fade-up" style="margin-bottom:14px;">
+        <div class="card-header"><span class="card-title">Declare a holiday</span></div>
+        <div class="form-group"><label class="form-label">Date <span>*</span></label><input class="form-input" type="date" id="h-date"></div>
+        <div class="form-group"><label class="form-label">Reason</label><input class="form-input" id="h-reason" placeholder="e.g. Holi, Owner unwell..."></div>
+        <button class="btn btn-primary btn-full" onclick="declare()">Declare holiday</button>
+        <p style="margin-top:8px;font-size:.8125rem;">Students cannot mark attendance on declared holidays.</p>
+      </div>
+      <div class="card fade-up delay-1">
+        <div class="card-header"><span class="card-title">Upcoming holidays</span></div>
+        <div id="holiday-list"><div class="skeleton" style="height:100px;"></div></div>
+      </div>
+    </main>
+  </div>
+</div>
+<script src="/js/auth.js"></script>
+<script src="/js/api.js"></script>
+<script src="/js/utils.js"></script>
+<script>
+if(!auth.requireAuth(['OWNER'])){}
+utils.fillUserInfo()
+utils.registerSW()
+utils.initRipples()
+document.getElementById('h-date').min=new Date().toISOString().split('T')[0]
+
+async function declare(){
+  const date=document.getElementById('h-date').value
+  const reason=document.getElementById('h-reason').value.trim()
+  if(!date){utils.toast('Please select a date','warning');return}
+  try{
+    await api.holidays.declare({date,reason:reason||undefined})
+    utils.toast('Holiday declared!','success')
+    document.getElementById('h-date').value=''
+    document.getElementById('h-reason').value=''
+    loadHolidays()
+  }catch(err){utils.toast(err.message,'error')}
+}
+
+async function deleteHoliday(id){
+  if(!utils.confirmDialog('Cancel this holiday?'))return
+  try{await api.holidays.delete(id);utils.toast('Holiday cancelled','success');loadHolidays()}catch(err){utils.toast(err.message,'error')}
+}
+
+async function loadHolidays(){
+  try{
+    const holidays=await api.holidays.my()
+    if(holidays.length===0){document.getElementById('holiday-list').innerHTML=`<div style="padding:16px 0;text-align:center;font-size:.875rem;color:var(--color-text-muted);">No upcoming holidays</div>`;return}
+    document.getElementById('holiday-list').innerHTML=holidays.map(h=>`
+      <div class="list-item">
+        <div style="background:var(--color-warning-light);border-radius:var(--radius-md);padding:8px 12px;min-width:80px;text-align:center;">
+          <div style="font-size:.6875rem;font-weight:700;color:var(--color-warning-text);font-family:var(--font-mono);">${new Date(h.date).toLocaleDateString('en-IN',{day:'2-digit',month:'short'})}</div>
+        </div>
+        <div style="flex:1;"><div style="font-size:.875rem;font-weight:600;">${h.reason||'Holiday'}</div></div>
+        <button class="btn btn-danger btn-sm" onclick="deleteHoliday('${h.id}')">Cancel</button>
+      </div>`).join('')
+  }catch(err){document.getElementById('holiday-list').innerHTML=`<p style="color:var(--color-danger-text);">${err.message}</p>`}
+}
+loadHolidays()
+</script>
+</body>
+</html>

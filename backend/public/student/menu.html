@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Today's Menu — MessMitra</title>
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="stylesheet" href="/css/components.css">
+  <link rel="manifest" href="/manifest.json">
+  <style>
+    .meal-section {
+      margin-bottom: 20px;
+    }
+
+    .meal-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 12px;
+      padding-bottom: 8px;
+      border-bottom: 2px solid var(--color-border);
+    }
+
+    .meal-header-icon {
+      font-size: 1.375rem;
+    }
+
+    .meal-header-title {
+      font-size: 1rem;
+      font-weight: 700;
+    }
+
+    .meal-header-count {
+      font-size: 0.75rem;
+      color: var(--color-text-muted);
+      font-family: var(--font-mono);
+      margin-left: auto;
+    }
+
+    .menu-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--color-border);
+    }
+
+    .menu-item:last-child {
+      border: none;
+    }
+
+    .menu-item-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      border: 2px solid;
+    }
+
+    .menu-item-name {
+      flex: 1;
+      font-size: 0.9375rem;
+      font-weight: 500;
+    }
+
+    .menu-item-unavail {
+      opacity: 0.45;
+      text-decoration: line-through;
+    }
+
+    .date-nav {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 20px;
+    }
+
+    .date-btn {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      border: 1.5px solid var(--color-border);
+      background: var(--color-surface);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: var(--transition);
+      font-size: 0.875rem;
+    }
+
+    .date-btn:hover {
+      border-color: var(--color-primary);
+      color: var(--color-primary);
+    }
+
+    .date-label {
+      flex: 1;
+      text-align: center;
+      font-size: 0.9375rem;
+      font-weight: 600;
+    }
+  </style>
+</head>
+
+<body class="page-student">
+<script>
+  const _t = localStorage.getItem('mm_token');
+  const _u = (() => { try { return JSON.parse(localStorage.getItem('mm_user')); } catch { return null; } })();
+  if (!_t || !_u) { window.location.replace('/login.html'); }
+</script>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="sidebar-logo">
+        <div class="sidebar-logo-mark">MessMitra</div>
+        <div class="sidebar-logo-sub">student portal</div>
+      </div>
+      <nav class="sidebar-nav">
+        <a href="/student/dashboard.html" class="sidebar-item">
+          <div class="sidebar-item-dot"></div>Dashboard
+        </a>
+        <a href="/student/attendance.html" class="sidebar-item">
+          <div class="sidebar-item-dot"></div>Mark attendance
+        </a>
+        <a href="/student/menu.html" class="sidebar-item active">
+          <div class="sidebar-item-dot"></div>Today's menu
+        </a>
+        <a href="/student/subscription.html" class="sidebar-item">
+          <div class="sidebar-item-dot"></div>My subscription
+        </a>
+        <a href="/student/delivery.html" class="sidebar-item">
+          <div class="sidebar-item-dot"></div>Delivery tracking
+        </a>
+        <a href="/student/profile.html" class="sidebar-item">
+          <div class="sidebar-item-dot"></div>Profile
+        </a>
+      </nav>
+      <div class="sidebar-footer">
+        <div class="sidebar-user">
+          <div class="avatar avatar-sm" data-user-initials>?</div>
+          <div>
+            <div class="sidebar-user-name" data-user-name></div>
+            <div class="sidebar-user-role">Student</div>
+          </div>
+        </div>
+      </div>
+    </aside>
+    <div class="main-content">
+      <header class="topbar">
+        <div style="flex:1;font-size:1rem;font-weight:700;">Today's menu</div>
+      </header>
+      <main class="page-content">
+        <div class="date-nav">
+          <button class="date-btn" onclick="changeDate(-1)">‹</button>
+          <div class="date-label" id="date-label"></div>
+          <button class="date-btn" onclick="changeDate(1)">›</button>
+        </div>
+        <div id="menu-body">
+          <div class="skeleton" style="height:300px;"></div>
+        </div>
+      </main>
+    </div>
+  </div>
+  <div class="bottom-tabs">
+    <div class="bottom-tabs-inner">
+      <a href="/student/dashboard.html" class="tab-item"><svg viewBox="0 0 22 22">
+          <rect x="2" y="2" width="8" height="8" rx="2" />
+          <rect x="12" y="2" width="8" height="8" rx="2" />
+          <rect x="2" y="12" width="8" height="8" rx="2" />
+          <rect x="12" y="12" width="8" height="8" rx="2" />
+        </svg><span>Home</span>
+        <div class="tab-dot"></div>
+      </a>
+      <a href="/student/attendance.html" class="tab-item"><svg viewBox="0 0 22 22">
+          <circle cx="11" cy="11" r="9" />
+          <path d="M7 11l3 3 5-5" />
+        </svg><span>Attend</span>
+        <div class="tab-dot"></div>
+      </a>
+      <a href="/student/menu.html" class="tab-item active"><svg viewBox="0 0 22 22">
+          <path d="M3 6h16M3 11h16M3 16h10" />
+        </svg><span>Menu</span>
+        <div class="tab-dot"></div>
+      </a>
+      <a href="/student/delivery.html" class="tab-item"><svg viewBox="0 0 22 22">
+          <path d="M3 11l4-7h8l4 7v4H3z" />
+          <circle cx="7" cy="18" r="2" />
+          <circle cx="15" cy="18" r="2" />
+        </svg><span>Delivery</span>
+        <div class="tab-dot"></div>
+      </a>
+      <a href="/student/profile.html" class="tab-item"><svg viewBox="0 0 22 22">
+          <circle cx="11" cy="7" r="4" />
+          <path d="M3 20c0-4 3.6-7 8-7s8 3 8 7" />
+        </svg><span>Profile</span>
+        <div class="tab-dot"></div>
+      </a>
+    </div>
+  </div>
+  <script src="/js/auth.js"></script>
+  <script src="/js/api.js"></script>
+  <script src="/js/utils.js"></script>
+  <script>
+    if (!auth.requireAuth(['STUDENT'])) { }
+    utils.fillUserInfo()
+    utils.registerSW()
+
+    let currentDate = new Date()
+    let messId = null
+
+    const foodColor = { VEG: '#10B981', NONVEG: '#EF4444', EGG: '#F59E0B', VEGAN: '#10B981' }
+    const mealMeta = { BREAKFAST: { icon: '🌅', label: 'Breakfast' }, LUNCH: { icon: '☀️', label: 'Lunch' }, DINNER: { icon: '🌙', label: 'Dinner' } }
+
+    function updateDateLabel() {
+      const today = new Date(); today.setHours(0, 0, 0, 0)
+      const cur = new Date(currentDate); cur.setHours(0, 0, 0, 0)
+      const diff = Math.round((cur - today) / 86400000)
+      const label = diff === 0 ? 'Today' : diff === 1 ? 'Tomorrow' : diff === -1 ? 'Yesterday' : currentDate.toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' })
+      document.getElementById('date-label').textContent = label
+    }
+
+    function changeDate(delta) {
+      currentDate.setDate(currentDate.getDate() + delta)
+      updateDateLabel()
+      if (messId) loadMenu()
+    }
+
+    async function loadMenu() {
+      if (!messId) return
+      document.getElementById('menu-body').innerHTML = `<div class="skeleton" style="height:300px;"></div>`
+      try {
+        const dateStr = currentDate.toISOString().split('T')[0]
+        const menu = await api.menu.byMess(messId, `date=${dateStr}`)
+        const meals = ['BREAKFAST', 'LUNCH', 'DINNER']
+        let html = ''
+        let anyItems = false
+        meals.forEach(meal => {
+          const items = menu[meal] || []
+          if (items.length === 0) return
+          anyItems = true
+          const meta = mealMeta[meal]
+          html += `
+          <div class="meal-section fade-up card">
+            <div class="meal-header">
+              <span class="meal-header-icon">${meta.icon}</span>
+              <span class="meal-header-title">${meta.label}</span>
+              <span class="meal-header-count">${items.length} item${items.length !== 1 ? 's' : ''}</span>
+            </div>
+            ${items.map(item => `
+              <div class="menu-item">
+                <div class="menu-item-dot" style="background:${item.isAvailable ? foodColor[item.foodCategory] || '#888' : '#ccc'};border-color:${item.isAvailable ? foodColor[item.foodCategory] || '#888' : '#ccc'};"></div>
+                <span class="menu-item-name ${!item.isAvailable ? 'menu-item-unavail' : ''}">${item.itemName}</span>
+                ${utils.foodBadge(item.foodCategory)}
+                ${!item.isAvailable ? `<span class="badge badge-neutral" style="font-size:0.6875rem;">Unavailable</span>` : ''}
+              </div>`).join('')}
+          </div>`
+        })
+        document.getElementById('menu-body').innerHTML = anyItems ? html : `
+        <div class="empty-state fade-up">
+          <div class="empty-state-icon">🍽</div>
+          <h3>No menu published</h3>
+          <p>The owner hasn't published the menu for this day yet.</p>
+        </div>`
+      } catch (err) {
+        document.getElementById('menu-body').innerHTML = `<div class="empty-state"><h3>Error</h3><p>${err.message}</p></div>`
+      }
+    }
+
+    async function init() {
+      try {
+        const sub = await api.subscriptions.me()
+        if (!sub) { document.getElementById('menu-body').innerHTML = `<div class="empty-state"><div class="empty-state-icon">📋</div><h3>No subscription</h3><p>Subscribe to a mess to view menu.</p><a href="/index.html" class="btn btn-primary" style="margin-top:12px;">Find a mess</a></div>`; return }
+        messId = sub.plan.mess.id
+        updateDateLabel()
+        loadMenu()
+      } catch (err) {
+        document.getElementById('menu-body').innerHTML = `<div class="empty-state"><h3>Error</h3><p>${err.message}</p></div>`
+      }
+    }
+
+    updateDateLabel()
+    init()
+  </script>
+</body>
+
+</html>

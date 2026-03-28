@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Subscribers — MessMitra</title>
+<link rel="stylesheet" href="/css/main.css">
+<link rel="stylesheet" href="/css/components.css">
+<link rel="manifest" href="/manifest.json">
+<style>
+  .sub-row{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--color-border);}
+  .sub-row:last-child{border:none;}
+  .filter-bar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;}
+</style>
+</head>
+<body class="page-owner">
+<script>
+  const _t = localStorage.getItem('mm_token');
+  const _u = (() => { try { return JSON.parse(localStorage.getItem('mm_user')); } catch { return null; } })();
+  if (!_t || !_u) { window.location.replace('/login.html'); }
+</script>
+<div class="app-shell">
+  <aside class="sidebar">
+    <div class="sidebar-logo"><div class="sidebar-logo-mark">MessMitra</div><div class="sidebar-logo-sub">owner portal</div></div>
+    <nav class="sidebar-nav">
+      <a href="/owner/dashboard.html" class="sidebar-item"><div class="sidebar-item-dot"></div>Dashboard</a>
+      <a href="/owner/demand.html" class="sidebar-item"><div class="sidebar-item-dot"></div>Demand & attendance</a>
+      <a href="/owner/menu-manage.html" class="sidebar-item"><div class="sidebar-item-dot"></div>Menu</a>
+      <a href="/owner/plans.html" class="sidebar-item"><div class="sidebar-item-dot"></div>Plans</a>
+      <a href="/owner/subscribers.html" class="sidebar-item active"><div class="sidebar-item-dot"></div>Subscribers</a>
+      <a href="/owner/delivery-manage.html" class="sidebar-item"><div class="sidebar-item-dot"></div>Deliveries</a>
+      <a href="/owner/holidays.html" class="sidebar-item"><div class="sidebar-item-dot"></div>Holidays</a>
+      <a href="/owner/reviews.html" class="sidebar-item"><div class="sidebar-item-dot"></div>Reviews</a>
+      <a href="/owner/mess-setup.html" class="sidebar-item"><div class="sidebar-item-dot"></div>Mess setup</a>
+      <a href="/owner/profile.html" class="sidebar-item"><div class="sidebar-item-dot"></div>Profile</a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="sidebar-user">
+        <div class="avatar avatar-sm" data-user-initials>?</div>
+        <div><div class="sidebar-user-name" data-user-name></div><div class="sidebar-user-role">Owner</div></div>
+      </div>
+    </div>
+  </aside>
+  <div class="main-content">
+    <header class="topbar">
+      <div style="flex:1;font-size:1rem;font-weight:700;">Subscribers</div>
+      <span id="sub-count" style="font-size:.8125rem;color:var(--color-text-muted);font-family:var(--font-mono);"></span>
+    </header>
+    <main class="page-content">
+      <div class="filter-bar">
+        <button class="pill-tab active" data-filter="" onclick="setFilter('')">All</button>
+        <button class="pill-tab" data-filter="PENDING" onclick="setFilter('PENDING')">Pending</button>
+        <button class="pill-tab" data-filter="ACTIVE" onclick="setFilter('ACTIVE')">Active</button>
+        <button class="pill-tab" data-filter="CANCELLED" onclick="setFilter('CANCELLED')">Cancelled</button>
+      </div>
+      <div class="card"><div id="sub-list"><div class="skeleton" style="height:200px;"></div></div></div>
+    </main>
+  </div>
+</div>
+<script src="/js/auth.js"></script>
+<script src="/js/api.js"></script>
+<script src="/js/utils.js"></script>
+<script>
+if(!auth.requireAuth(['OWNER'])){}
+utils.fillUserInfo()
+utils.registerSW()
+let allSubs=[]
+let activeFilter=''
+
+function setFilter(f){
+  activeFilter=f
+  document.querySelectorAll('.pill-tab').forEach(b=>b.classList.toggle('active',b.dataset.filter===f))
+  renderSubs()
+}
+
+function renderSubs(){
+  const list=activeFilter?allSubs.filter(s=>s.status===activeFilter):allSubs
+  document.getElementById('sub-count').textContent=list.length+' shown'
+  if(list.length===0){document.getElementById('sub-list').innerHTML=`<div class="empty-state" style="padding:20px 0;"><h3>No subscribers</h3></div>`;return}
+  document.getElementById('sub-list').innerHTML=list.map(s=>`
+    <div class="sub-row">
+      <div class="avatar avatar-sm">${utils.initials(s.user.name)}</div>
+      <div style="flex:1;">
+        <div style="font-size:.875rem;font-weight:600;">${s.user.name}</div>
+        <div style="font-size:.75rem;color:var(--color-text-muted);">${s.plan.name} · ${s.user.phone}</div>
+      </div>
+      <div style="text-align:right;">
+        ${utils.statusBadge(s.status)}
+        <div style="font-size:.6875rem;color:var(--color-text-muted);margin-top:3px;">${utils.statusBadge(s.paymentStatus)}</div>
+      </div>
+      ${s.status==='PENDING'?`
+        <div style="display:flex;flex-direction:column;gap:4px;">
+          <button class="btn btn-success btn-sm" onclick="markPaid('${s.id}')">Mark paid</button>
+          <button class="btn btn-primary btn-sm" onclick="approve('${s.id}')">Approve</button>
+          <button class="btn btn-danger btn-sm" onclick="reject('${s.id}')">Reject</button>
+        </div>`:''}
+    </div>`).join('')
+}
+
+async function markPaid(id){
+  try{await api.subscriptions.payment(id);utils.toast('Payment marked','success');loadSubs()}catch(err){utils.toast(err.message,'error')}
+}
+async function approve(id){
+  try{await api.subscriptions.approve(id);utils.toast('Subscription approved!','success');loadSubs()}catch(err){utils.toast(err.message,'error')}
+}
+async function reject(id){
+  if(!utils.confirmDialog('Reject this subscription?'))return
+  try{await api.subscriptions.reject(id);utils.toast('Rejected','success');loadSubs()}catch(err){utils.toast(err.message,'error')}
+}
+
+async function loadSubs(){
+  try{
+    allSubs=await api.subscriptions.mess()
+    renderSubs()
+  }catch(err){document.getElementById('sub-list').innerHTML=`<div class="empty-state"><h3>Error</h3><p>${err.message}</p></div>`}
+}
+loadSubs()
+</script>
+</body>
+</html>

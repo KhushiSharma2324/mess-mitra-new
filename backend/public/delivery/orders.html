@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>My Orders — MessMitra</title>
+<link rel="stylesheet" href="/css/main.css">
+<link rel="stylesheet" href="/css/components.css">
+<link rel="manifest" href="/manifest.json">
+<style>
+  .order-card{background:var(--color-surface);border:1.5px solid var(--color-border);border-radius:var(--radius-lg);padding:16px;margin-bottom:10px;transition:var(--transition);}
+  .order-card.status-PICKED_UP{border-color:var(--color-cyan);}
+  .order-card.status-DELIVERED{border-color:var(--color-success);opacity:.7;}
+  .order-card.status-FAILED{border-color:var(--color-danger);opacity:.6;}
+  .order-student{font-size:.9375rem;font-weight:700;}
+  .order-addr{font-size:.8125rem;color:var(--color-text-muted);margin:4px 0;}
+  .order-mess{font-size:.75rem;color:var(--color-text-muted);font-family:var(--font-mono);}
+  .order-actions{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;}
+  .mess-pickup{background:var(--color-primary-light);border:1px solid #FED7AA;border-radius:var(--radius-md);padding:10px 14px;margin-bottom:16px;font-size:.875rem;color:var(--color-primary);}
+</style>
+</head>
+<body class="page-student">
+<script>
+  const _t = localStorage.getItem('mm_token');
+  const _u = (() => { try { return JSON.parse(localStorage.getItem('mm_user')); } catch { return null; } })();
+  if (!_t || !_u) { window.location.replace('/login.html'); }
+</script>
+<div class="app-shell">
+  <aside class="sidebar">
+    <div class="sidebar-logo"><div class="sidebar-logo-mark">MessMitra</div><div class="sidebar-logo-sub">delivery portal</div></div>
+    <nav class="sidebar-nav">
+      <a href="/delivery/dashboard.html" class="sidebar-item"><div class="sidebar-item-dot"></div>Dashboard</a>
+      <a href="/delivery/orders.html" class="sidebar-item active"><div class="sidebar-item-dot"></div>My orders</a>
+      <a href="/delivery/profile.html" class="sidebar-item"><div class="sidebar-item-dot"></div>Profile</a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="sidebar-user">
+        <div class="avatar avatar-sm" data-user-initials>?</div>
+        <div><div class="sidebar-user-name" data-user-name></div><div class="sidebar-user-role">Delivery</div></div>
+      </div>
+    </div>
+  </aside>
+  <div class="main-content">
+    <header class="topbar">
+      <div style="flex:1;font-size:1rem;font-weight:700;">My orders</div>
+      <div style="font-size:.75rem;color:var(--color-text-muted);font-family:var(--font-mono);" id="order-count"></div>
+    </header>
+    <main class="page-content">
+      <div id="page-body"><div class="skeleton" style="height:300px;border-radius:var(--radius-lg);"></div></div>
+    </main>
+  </div>
+</div>
+
+<div class="bottom-tabs">
+  <div class="bottom-tabs-inner">
+    <a href="/delivery/dashboard.html" class="tab-item">
+      <svg viewBox="0 0 22 22"><rect x="2" y="2" width="8" height="8" rx="2"/><rect x="12" y="2" width="8" height="8" rx="2"/><rect x="2" y="12" width="8" height="8" rx="2"/><rect x="12" y="12" width="8" height="8" rx="2"/></svg>
+      <span>Home</span><div class="tab-dot"></div>
+    </a>
+    <a href="/delivery/orders.html" class="tab-item active">
+      <svg viewBox="0 0 22 22"><path d="M3 11l4-7h8l4 7v4H3z"/><circle cx="7" cy="18" r="2"/><circle cx="15" cy="18" r="2"/></svg>
+      <span>Orders</span><div class="tab-dot"></div>
+    </a>
+    <a href="/delivery/profile.html" class="tab-item">
+      <svg viewBox="0 0 22 22"><circle cx="11" cy="7" r="4"/><path d="M3 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+      <span>Profile</span><div class="tab-dot"></div>
+    </a>
+  </div>
+</div>
+
+<script src="/js/auth.js"></script>
+<script src="/js/api.js"></script>
+<script src="/js/utils.js"></script>
+<script>
+if(!auth.requireAuth(['DELIVERY'])){}
+utils.fillUserInfo()
+utils.registerSW()
+
+async function markPickup(id){
+  try{await api.delivery.pickup(id);utils.toast('Picked up!','success');loadOrders()}catch(err){utils.toast(err.message,'error')}
+}
+async function markDelivered(id){
+  try{await api.delivery.deliver(id);utils.toast('Delivered!','success');loadOrders()}catch(err){utils.toast(err.message,'error')}
+}
+async function markFailed(id){
+  const reason=prompt('Reason for failure:')
+  try{await api.delivery.fail(id,{failureReason:reason||'Unable to deliver'});utils.toast('Reported','warning');loadOrders()}catch(err){utils.toast(err.message,'error')}
+}
+
+async function loadOrders(){
+  try{
+    const orders=await api.delivery.my()
+    document.getElementById('order-count').textContent=orders.length+' assigned'
+
+    if(orders.length===0){
+      document.getElementById('page-body').innerHTML=`
+        <div class="empty-state fade-up">
+          <div class="empty-state-icon">📭</div>
+          <h3>No orders assigned</h3>
+          <p>The mess owner will assign delivery orders to you. Check back soon.</p>
+        </div>`
+      return
+    }
+
+    const messName=orders[0]?.mess?.name||'Mess'
+    const messAddr=orders[0]?.mess?.address||''
+
+    let html=`
+      <div class="mess-pickup fade-up">
+        <div style="font-weight:700;margin-bottom:2px;">📍 Pick up from: ${messName}</div>
+        <div style="font-size:.8125rem;">${messAddr}</div>
+      </div>`
+
+    orders.forEach((o,i)=>{
+      const student=o.attendanceLog.subscription.user
+      const instructions=o.attendanceLog.subscription.specialInstructions
+      const mealType=o.attendanceLog.mealType
+      html+=`
+        <div class="order-card status-${o.status} fade-up" style="animation-delay:${i*.06}s;">
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:6px;">
+            <div>
+              <div class="order-student">${student.name}</div>
+              <div class="order-addr">${o.deliveryAddress}</div>
+              ${instructions?`<div style="font-size:.75rem;background:var(--color-warning-light);color:var(--color-warning-text);padding:3px 8px;border-radius:4px;display:inline-block;margin-top:2px;">📝 ${instructions}</div>`:''}
+            </div>
+            ${utils.statusBadge(o.status)}
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+            <span class="badge badge-neutral">${mealType.charAt(0)+mealType.slice(1).toLowerCase()}</span>
+            <a href="tel:${student.phone}" class="btn btn-ghost btn-sm" style="font-size:.75rem;">📞 Call</a>
+            <a href="https://maps.google.com/?q=${encodeURIComponent(o.deliveryAddress)}" target="_blank" class="btn btn-ghost btn-sm" style="font-size:.75rem;">🗺 Maps</a>
+          </div>
+          <div class="order-actions">
+            ${o.status==='ASSIGNED'?`<button class="btn btn-primary btn-sm" onclick="markPickup('${o.id}')">Mark picked up</button>`:''}
+            ${o.status==='PICKED_UP'?`<button class="btn btn-success btn-sm" onclick="markDelivered('${o.id}')">Mark delivered ✓</button>`:''}
+            ${['ASSIGNED','PICKED_UP'].includes(o.status)?`<button class="btn btn-danger btn-sm" onclick="markFailed('${o.id}')">Report failed</button>`:''}
+            ${o.status==='DELIVERED'?`<span style="font-size:.8125rem;color:var(--color-success-text);font-weight:600;">✓ Delivered at ${utils.formatTime(o.deliveredAt)}</span>`:''}
+            ${o.status==='FAILED'?`<span style="font-size:.8125rem;color:var(--color-danger-text);">✗ Failed: ${o.failureReason}</span>`:''}
+          </div>
+        </div>`
+    })
+
+    document.getElementById('page-body').innerHTML=html
+    utils.initRipples()
+  }catch(err){
+    document.getElementById('page-body').innerHTML=`<div class="empty-state"><h3>Error</h3><p>${err.message}</p></div>`
+  }
+}
+loadOrders()
+</script>
+</body>
+</html>

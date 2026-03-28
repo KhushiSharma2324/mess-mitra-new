@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mess Setup — MessMitra</title>
+<link rel="stylesheet" href="/css/main.css">
+<link rel="stylesheet" href="/css/components.css">
+<link rel="manifest" href="/manifest.json">
+<style>
+  .setup-wrap{max-width:600px;}
+  .form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+  .toggle-wrap{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--color-border);}
+  .toggle-wrap:last-child{border:none;}
+  .toggle-label{font-size:.875rem;font-weight:600;}
+  .toggle-sub{font-size:.75rem;color:var(--color-text-muted);margin-top:2px;}
+  .toggle-switch{position:relative;width:44px;height:24px;flex-shrink:0;}
+  .toggle-switch input{opacity:0;width:0;height:0;}
+  .toggle-slider{position:absolute;inset:0;background:var(--color-border);border-radius:99px;transition:.3s;cursor:pointer;}
+  .toggle-slider:before{content:'';position:absolute;width:18px;height:18px;left:3px;bottom:3px;background:#fff;border-radius:50%;transition:.3s;}
+  input:checked+.toggle-slider{background:var(--color-primary);}
+  input:checked+.toggle-slider:before{transform:translateX(20px);}
+  @media(max-width:600px){.form-row{grid-template-columns:1fr;}}
+</style>
+</head>
+<body class="page-owner">
+<script>
+  const _t = localStorage.getItem('mm_token');
+  const _u = (() => { try { return JSON.parse(localStorage.getItem('mm_user')); } catch { return null; } })();
+  if (!_t || !_u) { window.location.replace('/login.html'); }
+</script>
+<div class="app-shell">
+  <aside class="sidebar">
+    <div class="sidebar-logo"><div class="sidebar-logo-mark">MessMitra</div><div class="sidebar-logo-sub">owner portal</div></div>
+    <nav class="sidebar-nav">
+      <a href="/owner/dashboard.html" class="sidebar-item"><div class="sidebar-item-dot"></div>Dashboard</a>
+      <a href="/owner/demand.html" class="sidebar-item"><div class="sidebar-item-dot"></div>Demand & attendance</a>
+      <a href="/owner/menu-manage.html" class="sidebar-item"><div class="sidebar-item-dot"></div>Menu</a>
+      <a href="/owner/plans.html" class="sidebar-item"><div class="sidebar-item-dot"></div>Plans</a>
+      <a href="/owner/subscribers.html" class="sidebar-item"><div class="sidebar-item-dot"></div>Subscribers</a>
+      <a href="/owner/delivery-manage.html" class="sidebar-item"><div class="sidebar-item-dot"></div>Deliveries</a>
+      <a href="/owner/holidays.html" class="sidebar-item"><div class="sidebar-item-dot"></div>Holidays</a>
+      <a href="/owner/reviews.html" class="sidebar-item"><div class="sidebar-item-dot"></div>Reviews</a>
+      <a href="/owner/mess-setup.html" class="sidebar-item active"><div class="sidebar-item-dot"></div>Mess setup</a>
+      <a href="/owner/profile.html" class="sidebar-item"><div class="sidebar-item-dot"></div>Profile</a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="sidebar-user">
+        <div class="avatar avatar-sm" data-user-initials>?</div>
+        <div><div class="sidebar-user-name" data-user-name></div><div class="sidebar-user-role">Owner</div></div>
+      </div>
+    </div>
+  </aside>
+  <div class="main-content">
+    <header class="topbar">
+      <div style="flex:1;font-size:1rem;font-weight:700;" id="page-title">Mess setup</div>
+    </header>
+    <main class="page-content">
+      <div class="setup-wrap">
+        <div class="card fade-up">
+          <div class="card-header"><span class="card-title">Mess information</span></div>
+          <div class="form-group"><label class="form-label">Mess name <span>*</span></label><input class="form-input" id="name" placeholder="e.g. Shri Ram Mess"></div>
+          <div class="form-group"><label class="form-label">Description</label><textarea class="form-textarea" id="description" placeholder="Tell students about your mess..."></textarea></div>
+          <div class="form-group"><label class="form-label">Address <span>*</span></label><input class="form-input" id="address" placeholder="Full address with landmark"></div>
+          <div class="form-group"><label class="form-label">Contact phone <span>*</span></label><input class="form-input" id="phone" placeholder="10-digit mobile" maxlength="10"></div>
+          <div class="form-group">
+            <label class="form-label">Food category <span>*</span></label>
+            <select class="form-select" id="category">
+              <option value="">Select category</option>
+              <option value="PURE_VEG">Pure vegetarian</option>
+              <option value="NONVEG">Non-vegetarian</option>
+              <option value="BOTH">Both veg and non-veg</option>
+            </select>
+          </div>
+          <div class="form-row">
+            <div class="form-group"><label class="form-label">Opening time <span>*</span></label><input class="form-input" type="time" id="openingTime"></div>
+            <div class="form-group"><label class="form-label">Closing time <span>*</span></label><input class="form-input" type="time" id="closingTime"></div>
+          </div>
+        </div>
+        <div class="card fade-up delay-1" style="margin-top:12px;">
+          <div class="card-header"><span class="card-title">Attendance cutoff times</span></div>
+          <p style="margin-bottom:16px;font-size:.875rem;">Students cannot mark attendance after these times.</p>
+          <div class="form-row">
+            <div class="form-group"><label class="form-label">Breakfast cutoff</label><input class="form-input" type="time" id="breakfastCutoff"></div>
+            <div class="form-group"><label class="form-label">Lunch cutoff</label><input class="form-input" type="time" id="lunchCutoff"></div>
+          </div>
+          <div class="form-group" style="max-width:50%;"><label class="form-label">Dinner cutoff</label><input class="form-input" type="time" id="dinnerCutoff"></div>
+        </div>
+        <div class="card fade-up delay-2" style="margin-top:12px;" id="status-card" style="display:none;">
+          <div class="card-header"><span class="card-title">Mess status</span></div>
+          <div class="toggle-wrap">
+            <div><div class="toggle-label">Mess is active</div><div class="toggle-sub">Students can discover and subscribe to your mess</div></div>
+            <label class="toggle-switch"><input type="checkbox" id="isActive" onchange="toggleStatus()"><span class="toggle-slider"></span></label>
+          </div>
+        </div>
+        <div style="display:flex;gap:10px;margin-top:16px;">
+          <button class="btn btn-primary flex-1 fade-up delay-3" id="save-btn" onclick="saveMess()">Save changes</button>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+<script src="/js/auth.js"></script>
+<script src="/js/api.js"></script>
+<script src="/js/utils.js"></script>
+<script>
+if(!auth.requireAuth(['OWNER'])){}
+utils.fillUserInfo()
+utils.registerSW()
+utils.initRipples()
+let isEdit=false
+
+async function loadMess(){
+  try{
+    const mess=await api.mess.my()
+    isEdit=true
+    document.getElementById('page-title').textContent='Edit mess'
+    document.getElementById('name').value=mess.name||''
+    document.getElementById('description').value=mess.description||''
+    document.getElementById('address').value=mess.address||''
+    document.getElementById('phone').value=mess.phone||''
+    document.getElementById('category').value=mess.category||''
+    document.getElementById('openingTime').value=mess.openingTime||''
+    document.getElementById('closingTime').value=mess.closingTime||''
+    document.getElementById('breakfastCutoff').value=mess.breakfastCutoff||''
+    document.getElementById('lunchCutoff').value=mess.lunchCutoff||''
+    document.getElementById('dinnerCutoff').value=mess.dinnerCutoff||''
+    document.getElementById('isActive').checked=mess.isActive
+    document.getElementById('status-card').style.display='block'
+    document.getElementById('save-btn').textContent='Update mess'
+  }catch(e){
+    document.getElementById('page-title').textContent='Create your mess'
+    document.getElementById('save-btn').textContent='Create mess'
+  }
+}
+
+async function saveMess(){
+  const body={
+    name:document.getElementById('name').value.trim(),
+    description:document.getElementById('description').value.trim(),
+    address:document.getElementById('address').value.trim(),
+    phone:document.getElementById('phone').value.trim(),
+    category:document.getElementById('category').value,
+    openingTime:document.getElementById('openingTime').value,
+    closingTime:document.getElementById('closingTime').value,
+    breakfastCutoff:document.getElementById('breakfastCutoff').value||null,
+    lunchCutoff:document.getElementById('lunchCutoff').value||null,
+    dinnerCutoff:document.getElementById('dinnerCutoff').value||null,
+  }
+  if(!body.name||!body.address||!body.phone||!body.category||!body.openingTime||!body.closingTime){
+    utils.toast('Please fill all required fields','warning');return
+  }
+  try{
+    isEdit?await api.mess.update(body):await api.mess.create(body)
+    utils.toast(isEdit?'Mess updated!':'Mess created!','success')
+    setTimeout(()=>window.location.href='/owner/dashboard.html',1200)
+  }catch(err){utils.toast(err.message,'error')}
+}
+
+async function toggleStatus(){
+  try{
+    const r=await api.mess.toggle()
+    utils.toast(`Mess is now ${r.isActive?'active':'inactive'}`,'success')
+  }catch(err){utils.toast(err.message,'error')}
+}
+
+loadMess()
+</script>
+</body>
+</html>

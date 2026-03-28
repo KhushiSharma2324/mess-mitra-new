@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Profile — MessMitra</title>
+<link rel="stylesheet" href="/css/main.css">
+<link rel="stylesheet" href="/css/components.css">
+<link rel="manifest" href="/manifest.json">
+<style>
+  .profile-header{text-align:center;padding:32px 16px 20px;}
+  .profile-avatar{width:80px;height:80px;border-radius:50%;background:linear-gradient(135deg,#C84B00,#FF6B35);display:flex;align-items:center;justify-content:center;font-size:1.75rem;font-weight:800;color:#fff;margin:0 auto 12px;}
+</style>
+</head>
+<body class="page-student">
+<script>
+  const _t = localStorage.getItem('mm_token');
+  const _u = (() => { try { return JSON.parse(localStorage.getItem('mm_user')); } catch { return null; } })();
+  if (!_t || !_u) { window.location.replace('/login.html'); }
+</script>
+<div class="app-shell">
+  <aside class="sidebar">
+    <div class="sidebar-logo"><div class="sidebar-logo-mark">MessMitra</div><div class="sidebar-logo-sub">delivery portal</div></div>
+    <nav class="sidebar-nav">
+      <a href="/delivery/dashboard.html" class="sidebar-item"><div class="sidebar-item-dot"></div>Dashboard</a>
+      <a href="/delivery/orders.html" class="sidebar-item"><div class="sidebar-item-dot"></div>My orders</a>
+      <a href="/delivery/profile.html" class="sidebar-item active"><div class="sidebar-item-dot"></div>Profile</a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="sidebar-user">
+        <div class="avatar avatar-sm" data-user-initials>?</div>
+        <div><div class="sidebar-user-name" data-user-name></div><div class="sidebar-user-role">Delivery</div></div>
+      </div>
+    </div>
+  </aside>
+  <div class="main-content">
+    <header class="topbar">
+      <div style="flex:1;font-size:1rem;font-weight:700;">My profile</div>
+    </header>
+    <main class="page-content">
+      <div style="max-width:440px;margin:0 auto;">
+        <div class="profile-header fade-up">
+          <div class="profile-avatar" id="profile-avatar">?</div>
+          <div style="font-size:1.25rem;font-weight:700;" id="profile-name"></div>
+          <div style="font-size:.875rem;color:var(--color-text-muted);" id="profile-email"></div>
+          <div style="margin-top:8px;" id="profile-phone"></div>
+        </div>
+        <div class="card fade-up delay-1" style="margin-bottom:12px;">
+          <div class="card-header"><span class="card-title">Edit profile</span></div>
+          <div class="form-group"><label class="form-label">Full name</label><input class="form-input" id="edit-name" placeholder="Your name"></div>
+          <div class="form-group"><label class="form-label">Phone number</label><input class="form-input" id="edit-phone" maxlength="10" placeholder="10-digit mobile"></div>
+          <button class="btn btn-primary btn-full" onclick="saveProfile()">Save changes</button>
+        </div>
+        <div class="card fade-up delay-2" style="margin-bottom:12px;">
+          <div class="card-header"><span class="card-title">Change password</span></div>
+          <div class="form-group"><label class="form-label">Current password</label><input class="form-input" type="password" id="current-pw"></div>
+          <div class="form-group"><label class="form-label">New password</label><input class="form-input" type="password" id="new-pw"></div>
+          <button class="btn btn-secondary btn-full" onclick="changePassword()">Update password</button>
+        </div>
+        <button class="btn btn-danger btn-full fade-up delay-3" onclick="auth.logout()">Sign out</button>
+      </div>
+    </main>
+  </div>
+</div>
+<div class="bottom-tabs">
+  <div class="bottom-tabs-inner">
+    <a href="/delivery/dashboard.html" class="tab-item">
+      <svg viewBox="0 0 22 22"><rect x="2" y="2" width="8" height="8" rx="2"/><rect x="12" y="2" width="8" height="8" rx="2"/><rect x="2" y="12" width="8" height="8" rx="2"/><rect x="12" y="12" width="8" height="8" rx="2"/></svg>
+      <span>Home</span><div class="tab-dot"></div>
+    </a>
+    <a href="/delivery/orders.html" class="tab-item">
+      <svg viewBox="0 0 22 22"><path d="M3 11l4-7h8l4 7v4H3z"/><circle cx="7" cy="18" r="2"/><circle cx="15" cy="18" r="2"/></svg>
+      <span>Orders</span><div class="tab-dot"></div>
+    </a>
+    <a href="/delivery/profile.html" class="tab-item active">
+      <svg viewBox="0 0 22 22"><circle cx="11" cy="7" r="4"/><path d="M3 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+      <span>Profile</span><div class="tab-dot"></div>
+    </a>
+  </div>
+</div>
+<script src="/js/auth.js"></script>
+<script src="/js/api.js"></script>
+<script src="/js/utils.js"></script>
+<script>
+if(!auth.requireAuth(['DELIVERY'])){}
+utils.registerSW()
+utils.initRipples()
+
+async function loadProfile(){
+  try{
+    const user=await api.auth.me()
+    auth.save(auth.getToken(),user)
+    document.getElementById('profile-avatar').textContent=utils.initials(user.name)
+    document.getElementById('profile-name').textContent=user.name
+    document.getElementById('profile-email').textContent=user.email
+    document.getElementById('profile-phone').innerHTML=`<span class="badge badge-neutral">📞 ${user.phone}</span>`
+    document.getElementById('edit-name').value=user.name
+    document.getElementById('edit-phone').value=user.phone
+    utils.fillUserInfo()
+  }catch(err){utils.toast(err.message,'error')}
+}
+
+async function saveProfile(){
+  const name=document.getElementById('edit-name').value.trim()
+  const phone=document.getElementById('edit-phone').value.trim()
+  if(!name){utils.toast('Name is required','warning');return}
+  try{
+    const user=await api.auth.update({name,phone})
+    auth.save(auth.getToken(),user)
+    utils.fillUserInfo()
+    document.getElementById('profile-name').textContent=user.name
+    document.getElementById('profile-avatar').textContent=utils.initials(user.name)
+    utils.toast('Profile updated!','success')
+  }catch(err){utils.toast(err.message,'error')}
+}
+
+async function changePassword(){
+  const cur=document.getElementById('current-pw').value
+  const nw=document.getElementById('new-pw').value
+  if(!cur||!nw){utils.toast('Both fields required','warning');return}
+  if(nw.length<6){utils.toast('Password must be at least 6 characters','warning');return}
+  try{
+    await api.auth.password({currentPassword:cur,newPassword:nw})
+    utils.toast('Password updated!','success')
+    document.getElementById('current-pw').value=''
+    document.getElementById('new-pw').value=''
+  }catch(err){utils.toast(err.message,'error')}
+}
+
+loadProfile()
+</script>
+</body>
+</html>

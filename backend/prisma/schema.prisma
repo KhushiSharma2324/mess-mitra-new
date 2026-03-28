@@ -1,0 +1,248 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  STUDENT
+  OWNER
+  DELIVERY
+}
+
+enum MealType {
+  BREAKFAST
+  LUNCH
+  DINNER
+}
+
+enum FoodCategory {
+  VEG
+  NONVEG
+  EGG
+  VEGAN
+}
+
+enum MessCategory {
+  PURE_VEG
+  NONVEG
+  BOTH
+}
+
+enum PlanDuration {
+  WEEKLY
+  MONTHLY
+  CUSTOM
+}
+
+enum SubscriptionStatus {
+  PENDING
+  ACTIVE
+  CANCELLED
+  EXPIRED
+  PAUSED
+}
+
+enum PaymentStatus {
+  UNPAID
+  PAID
+}
+
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+  HOLIDAY
+}
+
+enum DeliveryStatus {
+  PENDING
+  ASSIGNED
+  PICKED_UP
+  DELIVERED
+  FAILED
+}
+
+model User {
+  id           String   @id @default(uuid())
+  name         String
+  email        String   @unique
+  phone        String   @unique
+  passwordHash String
+  role         Role
+  profilePhoto String?
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  mess          Mess[]
+  subscriptions Subscription[]
+  reviews       Review[]
+  deliveries    DeliveryOrder[] @relation("DeliveryPartner")
+
+  @@map("users")
+}
+
+model Mess {
+  id               String       @id @default(uuid())
+  ownerId          String
+  name             String
+  description      String?
+  address          String
+  latitude         Float?
+  longitude        Float?
+  category         MessCategory
+  coverPhoto       String?
+  phone            String
+  openingTime      String
+  closingTime      String
+  breakfastCutoff  String?
+  lunchCutoff      String?
+  dinnerCutoff     String?
+  isActive         Boolean      @default(true)
+  avgRating        Float        @default(0)
+  totalReviews     Int          @default(0)
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+
+  owner          User            @relation(fields: [ownerId], references: [id])
+  plans          Plan[]
+  menuItems      MenuItem[]
+  deliveryOrders DeliveryOrder[]
+  reviews        Review[]
+  holidays       Holiday[]
+
+  @@map("mess")
+}
+
+model Plan {
+  id           String       @id @default(uuid())
+  messId       String
+  name         String
+  mealTypes    MealType[]
+  foodCategory FoodCategory
+  duration     PlanDuration
+  price        Decimal
+  pricePerMeal Decimal?
+  maxSlots     Int
+  currentSlots Int          @default(0)
+  description  String?
+  isActive     Boolean      @default(true)
+  createdAt    DateTime     @default(now())
+
+  mess          Mess           @relation(fields: [messId], references: [id])
+  subscriptions Subscription[]
+
+  @@map("plans")
+}
+
+model Subscription {
+  id                  String             @id @default(uuid())
+  userId              String
+  planId              String
+  startDate           DateTime?
+  endDate             DateTime?
+  status              SubscriptionStatus @default(PENDING)
+  paymentStatus       PaymentStatus      @default(UNPAID)
+  deliveryAddress     String
+  deliveryLat         Float?
+  deliveryLng         Float?
+  specialInstructions String?
+  createdAt           DateTime           @default(now())
+  updatedAt           DateTime           @updatedAt
+
+  user           User            @relation(fields: [userId], references: [id])
+  plan           Plan            @relation(fields: [planId], references: [id])
+  attendanceLogs AttendanceLog[]
+
+  @@map("subscriptions")
+}
+
+model AttendanceLog {
+  id             String           @id @default(uuid())
+  subscriptionId String
+  date           DateTime         @db.Date
+  mealType       MealType
+  status         AttendanceStatus @default(PRESENT)
+  markedAt       DateTime         @default(now())
+
+  subscription  Subscription   @relation(fields: [subscriptionId], references: [id])
+  deliveryOrder DeliveryOrder?
+
+  @@unique([subscriptionId, date, mealType])
+  @@map("attendance_logs")
+}
+
+model MenuItem {
+  id            String       @id @default(uuid())
+  messId        String
+  itemName      String
+  mealType      MealType
+  foodCategory  FoodCategory
+  availableDate DateTime     @db.Date
+  isAvailable   Boolean      @default(true)
+  createdAt     DateTime     @default(now())
+
+  mess Mess @relation(fields: [messId], references: [id])
+
+  @@map("menu_items")
+}
+
+model DeliveryOrder {
+  id              String         @id @default(uuid())
+  attendanceLogId String         @unique
+  partnerId       String?
+  messId          String
+  deliveryAddress String
+  deliveryLat     Float?
+  deliveryLng     Float?
+  status          DeliveryStatus @default(PENDING)
+  clusterId       Int?
+  assignedAt      DateTime?
+  pickedUpAt      DateTime?
+  deliveredAt     DateTime?
+  failureReason   String?
+  createdAt       DateTime       @default(now())
+
+  attendanceLog AttendanceLog @relation(fields: [attendanceLogId], references: [id])
+  partner       User?         @relation("DeliveryPartner", fields: [partnerId], references: [id])
+  mess          Mess          @relation(fields: [messId], references: [id])
+  review        Review?
+
+  @@map("delivery_orders")
+}
+
+model Review {
+  id              String   @id @default(uuid())
+  userId          String
+  messId          String
+  deliveryOrderId String?  @unique
+  rating          Int
+  foodRating      Int?
+  deliveryRating  Int?
+  comment         String?
+  isVisible       Boolean  @default(true)
+  createdAt       DateTime @default(now())
+
+  user          User           @relation(fields: [userId], references: [id])
+  mess          Mess           @relation(fields: [messId], references: [id])
+  deliveryOrder DeliveryOrder? @relation(fields: [deliveryOrderId], references: [id])
+
+  @@unique([userId, deliveryOrderId])
+  @@map("reviews")
+}
+
+model Holiday {
+  id        String   @id @default(uuid())
+  messId    String
+  date      DateTime @db.Date
+  reason    String?
+  createdAt DateTime @default(now())
+
+  mess Mess @relation(fields: [messId], references: [id])
+
+  @@unique([messId, date])
+  @@map("holidays")
+}

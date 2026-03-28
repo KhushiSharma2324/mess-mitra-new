@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Owner Dashboard — MessMitra</title>
+<link rel="stylesheet" href="/css/main.css">
+<link rel="stylesheet" href="/css/components.css">
+<link rel="manifest" href="/manifest.json">
+<style>
+  .owner-hero{background:linear-gradient(135deg,#0C2340,#1a3a5c);border-radius:var(--radius-xl);padding:24px;color:#fff;margin-bottom:16px;position:relative;overflow:hidden;}
+  .owner-hero-bg{position:absolute;right:-10px;top:-10px;font-size:5rem;opacity:.06;pointer-events:none;}
+  .owner-hero-name{font-size:1.25rem;font-weight:800;margin-bottom:2px;}
+  .owner-hero-sub{font-size:.875rem;color:#94A3B8;}
+  .owner-hero-actions{display:flex;gap:8px;margin-top:16px;flex-wrap:wrap;}
+  .chart-bars{display:flex;align-items:flex-end;gap:6px;height:80px;margin-top:12px;}
+  .chart-bar-group{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;}
+  .chart-bar-stack{width:100%;display:flex;flex-direction:column;justify-content:flex-end;height:68px;gap:2px;}
+  .chart-bar{width:100%;border-radius:3px 3px 0 0;min-height:3px;transition:height .6s cubic-bezier(.34,1.2,.64,1);}
+  .chart-bar-label{font-size:9px;color:var(--color-text-muted);font-family:var(--font-mono);}
+  .pipeline-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:var(--radius-md);background:var(--color-bg);margin-bottom:6px;cursor:pointer;transition:var(--transition);}
+  .pipeline-item:hover{background:var(--color-border);}
+  .pipeline-icon{width:28px;height:28px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:.875rem;flex-shrink:0;}
+  .pipeline-name{font-size:.8125rem;font-weight:600;flex:1;}
+  .pipeline-val{font-size:.75rem;color:var(--color-text-muted);}
+  .review-item{display:flex;gap:10px;padding:10px 0;border-bottom:1px solid var(--color-border);}
+  .review-item:last-child{border:none;}
+  .review-stars{color:var(--color-warning);font-size:.8125rem;font-family:var(--font-mono);}
+  .mid-grid{display:grid;grid-template-columns:1fr 340px;gap:14px;margin-bottom:16px;}
+  @media(max-width:900px){.mid-grid{grid-template-columns:1fr;}}
+</style>
+</head>
+<body class="page-owner">
+<script>
+  const _t = localStorage.getItem('mm_token');
+  const _u = (() => { try { return JSON.parse(localStorage.getItem('mm_user')); } catch { return null; } })();
+  if (!_t || !_u) { window.location.replace('/login.html'); }
+</script>
+<div class="app-shell">
+  <aside class="sidebar">
+    <div class="sidebar-logo"><div class="sidebar-logo-mark">MessMitra</div><div class="sidebar-logo-sub">owner portal</div></div>
+    <nav class="sidebar-nav">
+      <div class="sidebar-section-label">Overview</div>
+      <a href="/owner/dashboard.html" class="sidebar-item active"><div class="sidebar-item-dot"></div>Dashboard</a>
+      <a href="/owner/demand.html" class="sidebar-item"><div class="sidebar-item-dot"></div>Demand & attendance</a>
+      <div class="sidebar-section-label">Manage</div>
+      <a href="/owner/menu-manage.html" class="sidebar-item"><div class="sidebar-item-dot"></div>Menu</a>
+      <a href="/owner/plans.html" class="sidebar-item"><div class="sidebar-item-dot"></div>Plans</a>
+      <a href="/owner/subscribers.html" class="sidebar-item"><div class="sidebar-item-dot"></div>Subscribers</a>
+      <div class="sidebar-section-label">Operations</div>
+      <a href="/owner/delivery-manage.html" class="sidebar-item" id="nav-delivery"><div class="sidebar-item-dot"></div>Deliveries</a>
+      <a href="/owner/holidays.html" class="sidebar-item"><div class="sidebar-item-dot"></div>Holidays</a>
+      <a href="/owner/reviews.html" class="sidebar-item"><div class="sidebar-item-dot"></div>Reviews</a>
+      <div class="sidebar-section-label">Settings</div>
+      <a href="/owner/mess-setup.html" class="sidebar-item"><div class="sidebar-item-dot"></div>Mess setup</a>
+      <a href="/owner/profile.html" class="sidebar-item"><div class="sidebar-item-dot"></div>Profile</a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="sidebar-user">
+        <div class="avatar avatar-sm" data-user-initials>?</div>
+        <div><div class="sidebar-user-name" data-user-name></div><div class="sidebar-user-role">Owner</div></div>
+      </div>
+    </div>
+  </aside>
+  <div class="main-content">
+    <header class="topbar">
+      <div style="flex:1">
+        <div style="font-size:1rem;font-weight:700;" data-user-name>Dashboard</div>
+        <div style="font-size:.75rem;color:var(--color-text-muted);" id="topbar-date"></div>
+      </div>
+      <button class="btn btn-secondary btn-sm" onclick="window.location.href='/owner/holidays.html'">Declare holiday</button>
+      <button class="btn btn-primary btn-sm" id="gen-btn" onclick="generateOrders()">Generate orders</button>
+    </header>
+    <main class="page-content">
+      <div id="page-body"><div class="stat-grid"><?= Array(4).fill('<div class="skeleton" style="height:90px;border-radius:var(--radius-lg);"></div>').join('') ?></div></div>
+    </main>
+  </div>
+</div>
+<script src="/js/auth.js"></script>
+<script src="/js/api.js"></script>
+<script src="/js/utils.js"></script>
+<script>
+if(!auth.requireAuth(['OWNER'])){}
+utils.fillUserInfo()
+utils.registerSW()
+document.getElementById('topbar-date').textContent=new Date().toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'long'})
+
+async function generateOrders(){
+  const btn=document.getElementById('gen-btn')
+  btn.disabled=true; btn.textContent='Generating...'
+  try{
+    const r=await api.delivery.generate()
+    utils.toast(`${r.generated} delivery orders generated!`,'success')
+    loadDashboard()
+  }catch(err){utils.toast(err.message,'error')}
+  finally{btn.disabled=false;btn.textContent='Generate orders'}
+}
+
+async function loadDashboard(){
+  try{
+    const[mess,demandData,summaryData]=await Promise.all([
+      api.mess.my().catch(()=>null),
+      api.attendance.messToday().catch(()=>({summary:{BREAKFAST:0,LUNCH:0,DINNER:0,total:0},logs:[]})),
+      api.attendance.messSummary().catch(()=>[]),
+    ])
+    if(!mess){
+      document.getElementById('page-body').innerHTML=`<div class="empty-state fade-up"><div class="empty-state-icon">🏠</div><h3>Set up your mess first</h3><p>Create your mess profile to get started.</p><a href="/owner/mess-setup.html" class="btn btn-primary" style="margin-top:12px;">Create mess</a></div>`
+      return
+    }
+    const deliveryData=await api.delivery.today().catch(()=>({summary:{total:0,PENDING:0,DELIVERED:0},orders:[]}))
+    const subsData=await api.subscriptions.mess().catch(()=>[])
+    const reviewsData=await api.reviews.owner().catch(()=>({summary:{_avg:{rating:0}},reviews:[]}))
+    const activeSubs=subsData.filter(s=>s.status==='ACTIVE').length
+    const pendingSubs=subsData.filter(s=>s.status==='PENDING').length
+
+    let html=`
+      <div class="owner-hero fade-up">
+        <div class="owner-hero-bg">🍱</div>
+        <div class="owner-hero-name">${mess.name}</div>
+        <div class="owner-hero-sub">${mess.address}</div>
+        <div class="owner-hero-actions">
+          <span class="badge ${mess.isActive?'badge-success':'badge-danger'}">${mess.isActive?'Active':'Inactive'}</span>
+          <span class="badge badge-neutral">${mess.category.replace('_',' ')}</span>
+          <span class="badge badge-primary">★ ${mess.avgRating>0?mess.avgRating.toFixed(1):'New'}</span>
+        </div>
+      </div>
+      <div class="stat-grid">
+        <div class="stat-card fade-up delay-1"><div class="stat-label">Today's demand</div><div class="stat-value" id="s1">0</div><div class="stat-change up">${demandData.summary.total} meals</div></div>
+        <div class="stat-card fade-up delay-2"><div class="stat-label">Active subscribers</div><div class="stat-value" id="s2">0</div><div class="stat-change ${pendingSubs>0?'down':'up'}">${pendingSubs>0?pendingSubs+' pending':'All approved'}</div></div>
+        <div class="stat-card fade-up delay-3"><div class="stat-label">Deliveries done</div><div class="stat-value" id="s3">0</div><div class="stat-change up">of ${deliveryData.summary.total} today</div></div>
+        <div class="stat-card fade-up delay-4"><div class="stat-label">Avg rating</div><div class="stat-value" id="s4" style="color:var(--color-warning);">${mess.avgRating>0?mess.avgRating.toFixed(1):'—'}</div><div class="stat-change up">${mess.totalReviews} reviews</div></div>
+      </div>`
+
+    setTimeout(()=>{
+      utils.countUp(document.getElementById('s1'),demandData.summary.total)
+      utils.countUp(document.getElementById('s2'),activeSubs)
+      utils.countUp(document.getElementById('s3'),deliveryData.summary.DELIVERED||0)
+    },200)
+
+    html+=`<div class="mid-grid">`
+    const maxVal=Math.max(...summaryData.map(d=>d.total),1)
+    html+=`
+      <div class="card fade-up delay-2">
+        <div class="card-header"><span class="card-title">Attendance this week</span><a href="/owner/demand.html" class="card-action">Full report →</a></div>
+        <div style="display:flex;gap:4px;align-items:flex-end;margin-bottom:8px;">
+          <div style="width:10px;height:10px;border-radius:2px;background:#C84B00;"></div><span style="font-size:10px;color:var(--color-text-muted);margin-right:8px;">Breakfast</span>
+          <div style="width:10px;height:10px;border-radius:2px;background:#FF6B35;"></div><span style="font-size:10px;color:var(--color-text-muted);margin-right:8px;">Lunch</span>
+          <div style="width:10px;height:10px;border-radius:2px;background:#10B981;"></div><span style="font-size:10px;color:var(--color-text-muted);">Dinner</span>
+        </div>
+        <div class="chart-bars">
+          ${summaryData.slice(-7).map(d=>`
+            <div class="chart-bar-group">
+              <div class="chart-bar-stack">
+                <div class="chart-bar" style="background:#C84B00;height:${Math.round((d.BREAKFAST/maxVal)*60)}px;"></div>
+                <div class="chart-bar" style="background:#FF6B35;height:${Math.round((d.LUNCH/maxVal)*60)}px;"></div>
+                <div class="chart-bar" style="background:#10B981;height:${Math.round((d.DINNER/maxVal)*60)}px;"></div>
+              </div>
+              <div class="chart-bar-label">${new Date(d.date).toLocaleDateString('en-IN',{weekday:'short'}).slice(0,2)}</div>
+            </div>`).join('')}
+        </div>
+      </div>
+      <div class="card fade-up delay-3">
+        <div class="card-header"><span class="card-title">Today's pipeline</span></div>
+        <div class="pipeline-item" onclick="window.location.href='/owner/demand.html'">
+          <div class="pipeline-icon" style="background:var(--color-success-light);">✓</div>
+          <div><div class="pipeline-name">Attendance</div><div class="pipeline-val">${demandData.summary.total} marked today</div></div>
+          <span class="badge ${demandData.summary.total>0?'badge-success':'badge-warning'}">${demandData.summary.total>0?'Active':'None'}</span>
+        </div>
+        <div class="pipeline-item" onclick="window.location.href='/owner/delivery-manage.html'">
+          <div class="pipeline-icon" style="background:var(--color-warning-light);">📦</div>
+          <div><div class="pipeline-name">Orders</div><div class="pipeline-val">${deliveryData.summary.total} total today</div></div>
+          <span class="badge ${deliveryData.summary.PENDING>0?'badge-warning':'badge-success'}">${deliveryData.summary.PENDING||0} pending</span>
+        </div>
+        <div class="pipeline-item" onclick="window.location.href='/owner/subscribers.html'">
+          <div class="pipeline-icon" style="background:var(--color-info-light);">👥</div>
+          <div><div class="pipeline-name">Subscribers</div><div class="pipeline-val">${activeSubs} active</div></div>
+          ${pendingSubs>0?`<span class="badge badge-warning">${pendingSubs} pending</span>`:'<span class="badge badge-success">All good</span>'}
+        </div>
+      </div>`
+    html+=`</div>`
+
+    if(reviewsData.reviews&&reviewsData.reviews.length>0){
+      html+=`
+        <div class="card fade-up delay-4">
+          <div class="card-header"><span class="card-title">Recent reviews</span><a href="/owner/reviews.html" class="card-action">View all →</a></div>
+          ${reviewsData.reviews.slice(0,3).map(r=>`
+            <div class="review-item">
+              <div class="avatar avatar-sm">${utils.initials(r.user.name)}</div>
+              <div style="flex:1;">
+                <div style="display:flex;align-items:center;justify-content:space-between;">
+                  <span style="font-size:.875rem;font-weight:600;">${r.user.name}</span>
+                  <span class="review-stars">${'★'.repeat(r.rating)}${'☆'.repeat(5-r.rating)}</span>
+                </div>
+                ${r.comment?`<div style="font-size:.8125rem;color:var(--color-text-secondary);margin-top:2px;">${r.comment}</div>`:''}
+              </div>
+            </div>`).join('')}
+        </div>`
+    }
+
+    document.getElementById('page-body').innerHTML=html
+    utils.initRipples()
+  }catch(err){
+    document.getElementById('page-body').innerHTML=`<div class="empty-state"><h3>Error loading dashboard</h3><p>${err.message}</p></div>`
+  }
+}
+loadDashboard()
+</script>
+</body>
+</html>

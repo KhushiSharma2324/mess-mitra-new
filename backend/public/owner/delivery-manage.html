@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Deliveries — MessMitra</title>
+<link rel="stylesheet" href="/css/main.css">
+<link rel="stylesheet" href="/css/components.css">
+<link rel="manifest" href="/manifest.json">
+<style>
+  .order-row{display:flex;align-items:center;gap:10px;padding:11px 0;border-bottom:1px solid var(--color-border);}
+  .order-row:last-child{border:none;}
+  .order-addr{font-size:.8125rem;color:var(--color-text-muted);}
+</style>
+</head>
+<body class="page-owner">
+<script>
+  const _t = localStorage.getItem('mm_token');
+  const _u = (() => { try { return JSON.parse(localStorage.getItem('mm_user')); } catch { return null; } })();
+  if (!_t || !_u) { window.location.replace('/login.html'); }
+</script>
+<div class="app-shell">
+  <aside class="sidebar">
+    <div class="sidebar-logo"><div class="sidebar-logo-mark">MessMitra</div><div class="sidebar-logo-sub">owner portal</div></div>
+    <nav class="sidebar-nav">
+      <a href="/owner/dashboard.html" class="sidebar-item"><div class="sidebar-item-dot"></div>Dashboard</a>
+      <a href="/owner/demand.html" class="sidebar-item"><div class="sidebar-item-dot"></div>Demand & attendance</a>
+      <a href="/owner/menu-manage.html" class="sidebar-item"><div class="sidebar-item-dot"></div>Menu</a>
+      <a href="/owner/plans.html" class="sidebar-item"><div class="sidebar-item-dot"></div>Plans</a>
+      <a href="/owner/subscribers.html" class="sidebar-item"><div class="sidebar-item-dot"></div>Subscribers</a>
+      <a href="/owner/delivery-manage.html" class="sidebar-item active"><div class="sidebar-item-dot"></div>Deliveries</a>
+      <a href="/owner/holidays.html" class="sidebar-item"><div class="sidebar-item-dot"></div>Holidays</a>
+      <a href="/owner/reviews.html" class="sidebar-item"><div class="sidebar-item-dot"></div>Reviews</a>
+      <a href="/owner/mess-setup.html" class="sidebar-item"><div class="sidebar-item-dot"></div>Mess setup</a>
+      <a href="/owner/profile.html" class="sidebar-item"><div class="sidebar-item-dot"></div>Profile</a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="sidebar-user">
+        <div class="avatar avatar-sm" data-user-initials>?</div>
+        <div><div class="sidebar-user-name" data-user-name></div><div class="sidebar-user-role">Owner</div></div>
+      </div>
+    </div>
+  </aside>
+  <div class="main-content">
+    <header class="topbar">
+      <div style="flex:1;font-size:1rem;font-weight:700;">Deliveries</div>
+      <button class="btn btn-primary btn-sm" onclick="generateOrders()">Generate orders</button>
+    </header>
+    <main class="page-content">
+      <div class="stat-grid" id="summary-cards" style="margin-bottom:16px;"></div>
+      <div class="filter-bar" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;">
+        <button class="pill-tab active" data-filter="" onclick="setFilter('')">All</button>
+        <button class="pill-tab" data-filter="PENDING" onclick="setFilter('PENDING')">Pending</button>
+        <button class="pill-tab" data-filter="ASSIGNED" onclick="setFilter('ASSIGNED')">Assigned</button>
+        <button class="pill-tab" data-filter="DELIVERED" onclick="setFilter('DELIVERED')">Delivered</button>
+        <button class="pill-tab" data-filter="FAILED" onclick="setFilter('FAILED')">Failed</button>
+      </div>
+      <div class="card"><div id="orders-list"><div class="skeleton" style="height:200px;"></div></div></div>
+    </main>
+  </div>
+</div>
+<script src="/js/auth.js"></script>
+<script src="/js/api.js"></script>
+<script src="/js/utils.js"></script>
+<script>
+if(!auth.requireAuth(['OWNER'])){}
+utils.fillUserInfo()
+utils.registerSW()
+let allOrders=[]
+let partners=[]
+let activeFilter=''
+
+function setFilter(f){
+  activeFilter=f
+  document.querySelectorAll('.pill-tab').forEach(b=>b.classList.toggle('active',b.dataset.filter===f))
+  renderOrders()
+}
+
+function renderOrders(){
+  const list=activeFilter?allOrders.filter(o=>o.status===activeFilter):allOrders
+  if(list.length===0){document.getElementById('orders-list').innerHTML=`<div class="empty-state" style="padding:20px 0;"><h3>No orders</h3><p>Generate orders from the demand page after attendance closes.</p></div>`;return}
+  document.getElementById('orders-list').innerHTML=list.map(o=>`
+    <div class="order-row">
+      <div class="avatar avatar-sm">${utils.initials(o.attendanceLog.subscription.user.name)}</div>
+      <div style="flex:1;">
+        <div style="font-size:.875rem;font-weight:600;">${o.attendanceLog.subscription.user.name}</div>
+        <div class="order-addr">${o.deliveryAddress}</div>
+      </div>
+      <div style="text-align:right;margin-right:8px;">
+        ${utils.statusBadge(o.status)}
+        ${o.partner?`<div style="font-size:.6875rem;color:var(--color-text-muted);margin-top:2px;">→ ${o.partner.name}</div>`:''}
+      </div>
+      ${o.status==='PENDING'||o.status==='ASSIGNED'?`
+        <select class="form-select" style="width:130px;font-size:.8125rem;padding:6px 8px;" onchange="assignPartner('${o.id}',this.value)">
+          <option value="">Assign partner</option>
+          ${partners.map(p=>`<option value="${p.id}" ${o.partnerId===p.id?'selected':''}>${p.name}</option>`).join('')}
+        </select>`:''}
+    </div>`).join('')
+}
+
+async function assignPartner(orderId,partnerId){
+  if(!partnerId)return
+  try{
+    await api.delivery.assign(orderId,{partnerId})
+    utils.toast('Partner assigned!','success')
+    loadOrders()
+  }catch(err){utils.toast(err.message,'error')}
+}
+
+async function generateOrders(){
+  try{
+    const r=await api.delivery.generate()
+    utils.toast(`${r.generated} orders generated!`,'success')
+    loadOrders()
+  }catch(err){utils.toast(err.message,'error')}
+}
+
+async function loadOrders(){
+  try{
+    const[data,partnerList]=await Promise.all([api.delivery.today(),api.delivery.partners()])
+    allOrders=data.orders||[]
+    partners=partnerList||[]
+    const s=data.summary||{}
+    document.getElementById('summary-cards').innerHTML=`
+      <div class="stat-card"><div class="stat-label">Total</div><div class="stat-value">${s.total||0}</div></div>
+      <div class="stat-card"><div class="stat-label">Pending</div><div class="stat-value" style="color:var(--color-warning);">${s.PENDING||0}</div></div>
+      <div class="stat-card"><div class="stat-label">Delivered</div><div class="stat-value" style="color:var(--color-success);">${s.DELIVERED||0}</div></div>
+      <div class="stat-card"><div class="stat-label">Failed</div><div class="stat-value" style="color:var(--color-danger);">${s.FAILED||0}</div></div>`
+    renderOrders()
+  }catch(err){document.getElementById('orders-list').innerHTML=`<div class="empty-state"><h3>Error</h3><p>${err.message}</p></div>`}
+}
+loadOrders()
+</script>
+</body>
+</html>

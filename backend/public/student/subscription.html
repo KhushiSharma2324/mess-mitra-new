@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Subscription — MessMitra</title>
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="stylesheet" href="/css/components.css">
+  <link rel="manifest" href="/manifest.json">
+  <style>
+    .sub-card {
+      background: linear-gradient(135deg, #0C2340, #1a3a5c);
+      border-radius: var(--radius-xl);
+      padding: 24px;
+      color: #fff;
+      margin-bottom: 16px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .sub-card-bg {
+      position: absolute;
+      right: -20px;
+      bottom: -20px;
+      font-size: 6rem;
+      opacity: 0.06;
+    }
+
+    .sub-mess-name {
+      font-size: 1.375rem;
+      font-weight: 800;
+      margin-bottom: 4px;
+    }
+
+    .sub-plan-name {
+      font-size: 0.9375rem;
+      color: #94A3B8;
+      margin-bottom: 16px;
+    }
+
+    .sub-meta {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .sub-meta-item {
+      background: rgba(255, 255, 255, 0.07);
+      border-radius: var(--radius-md);
+      padding: 10px 12px;
+    }
+
+    .sub-meta-label {
+      font-size: 0.6875rem;
+      color: #64748B;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: .05em;
+      margin-bottom: 4px;
+    }
+
+    .sub-meta-val {
+      font-size: 0.9375rem;
+      font-weight: 700;
+      font-family: var(--font-mono);
+    }
+
+    .progress-wrap {
+      margin-top: 16px;
+    }
+
+    .progress-label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.75rem;
+      color: #94A3B8;
+      margin-bottom: 6px;
+    }
+
+    .progress-track {
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 99px;
+      height: 6px;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      border-radius: 99px;
+      background: linear-gradient(90deg, #C84B00, #FF6B35);
+      transition: width 1s cubic-bezier(0.34, 1.2, 0.64, 1);
+    }
+
+    .plan-detail {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      padding: 16px;
+      margin-bottom: 12px;
+    }
+
+    .detail-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 0;
+      border-bottom: 1px solid var(--color-border);
+      font-size: 0.875rem;
+    }
+
+    .detail-row:last-child {
+      border: none;
+    }
+
+    .detail-label {
+      color: var(--color-text-secondary);
+    }
+
+    .detail-val {
+      font-weight: 600;
+      font-family: var(--font-mono);
+    }
+  </style>
+</head>
+
+<body class="page-student">
+<script>
+  const _t = localStorage.getItem('mm_token');
+  const _u = (() => { try { return JSON.parse(localStorage.getItem('mm_user')); } catch { return null; } })();
+  if (!_t || !_u) { window.location.replace('/login.html'); }
+</script>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="sidebar-logo">
+        <div class="sidebar-logo-mark">MessMitra</div>
+        <div class="sidebar-logo-sub">student portal</div>
+      </div>
+      <nav class="sidebar-nav">
+        <a href="/student/dashboard.html" class="sidebar-item">
+          <div class="sidebar-item-dot"></div>Dashboard
+        </a>
+        <a href="/student/attendance.html" class="sidebar-item">
+          <div class="sidebar-item-dot"></div>Mark attendance
+        </a>
+        <a href="/student/menu.html" class="sidebar-item">
+          <div class="sidebar-item-dot"></div>Today's menu
+        </a>
+        <a href="/student/subscription.html" class="sidebar-item active">
+          <div class="sidebar-item-dot"></div>My subscription
+        </a>
+        <a href="/student/delivery.html" class="sidebar-item">
+          <div class="sidebar-item-dot"></div>Delivery tracking
+        </a>
+        <a href="/student/profile.html" class="sidebar-item">
+          <div class="sidebar-item-dot"></div>Profile
+        </a>
+      </nav>
+      <div class="sidebar-footer">
+        <div class="sidebar-user">
+          <div class="avatar avatar-sm" data-user-initials>?</div>
+          <div>
+            <div class="sidebar-user-name" data-user-name></div>
+            <div class="sidebar-user-role">Student</div>
+          </div>
+        </div>
+      </div>
+    </aside>
+    <div class="main-content">
+      <header class="topbar">
+        <div style="flex:1;font-size:1rem;font-weight:700;">My subscription</div>
+      </header>
+      <main class="page-content">
+        <div id="page-body">
+          <div class="skeleton" style="height:300px;border-radius:var(--radius-xl);"></div>
+        </div>
+      </main>
+    </div>
+  </div>
+  <div class="bottom-tabs">
+    <div class="bottom-tabs-inner">
+      <a href="/student/dashboard.html" class="tab-item"><svg viewBox="0 0 22 22">
+          <rect x="2" y="2" width="8" height="8" rx="2" />
+          <rect x="12" y="2" width="8" height="8" rx="2" />
+          <rect x="2" y="12" width="8" height="8" rx="2" />
+          <rect x="12" y="12" width="8" height="8" rx="2" />
+        </svg><span>Home</span>
+        <div class="tab-dot"></div>
+      </a>
+      <a href="/student/attendance.html" class="tab-item"><svg viewBox="0 0 22 22">
+          <circle cx="11" cy="11" r="9" />
+          <path d="M7 11l3 3 5-5" />
+        </svg><span>Attend</span>
+        <div class="tab-dot"></div>
+      </a>
+      <a href="/student/menu.html" class="tab-item"><svg viewBox="0 0 22 22">
+          <path d="M3 6h16M3 11h16M3 16h10" />
+        </svg><span>Menu</span>
+        <div class="tab-dot"></div>
+      </a>
+      <a href="/student/delivery.html" class="tab-item"><svg viewBox="0 0 22 22">
+          <path d="M3 11l4-7h8l4 7v4H3z" />
+          <circle cx="7" cy="18" r="2" />
+          <circle cx="15" cy="18" r="2" />
+        </svg><span>Delivery</span>
+        <div class="tab-dot"></div>
+      </a>
+      <a href="/student/profile.html" class="tab-item"><svg viewBox="0 0 22 22">
+          <circle cx="11" cy="7" r="4" />
+          <path d="M3 20c0-4 3.6-7 8-7s8 3 8 7" />
+        </svg><span>Profile</span>
+        <div class="tab-dot"></div>
+      </a>
+    </div>
+  </div>
+  <script src="/js/auth.js"></script>
+  <script src="/js/api.js"></script>
+  <script src="/js/utils.js"></script>
+  <script>
+    if (!auth.requireAuth(['STUDENT'])) { }
+    utils.fillUserInfo()
+    utils.registerSW()
+
+    async function loadPage() {
+      try {
+        // FIX 6: Always check existing subscription FIRST before URL params
+        const sub = await api.subscriptions.me().catch(() => null)
+
+        // If an active/pending subscription exists, show it regardless of URL params
+        if (sub) {
+          const total = sub.endDate && sub.startDate ? Math.ceil((new Date(sub.endDate) - new Date(sub.startDate)) / 86400000) : 30
+          const passed = sub.startDate ? Math.ceil((new Date() - new Date(sub.startDate)) / 86400000) : 0
+          const pct = total > 0 ? Math.min(100, Math.round((passed / total) * 100)) : 0
+          const left = sub.endDate ? Math.max(0, Math.ceil((new Date(sub.endDate) - new Date()) / 86400000)) : '—'
+
+          document.getElementById('page-body').innerHTML = `
+          <div class="sub-card fade-up">
+            <div class="sub-card-bg">🍱</div>
+            <div class="sub-mess-name">${sub.plan.mess.name}</div>
+            <div class="sub-plan-name">${sub.plan.name} · ${sub.plan.mealTypes.join(', ')}</div>
+            <div class="sub-meta">
+              <div class="sub-meta-item"><div class="sub-meta-label">Status</div><div class="sub-meta-val">${utils.statusBadge(sub.status)}</div></div>
+              <div class="sub-meta-item"><div class="sub-meta-label">Payment</div><div class="sub-meta-val">${utils.statusBadge(sub.paymentStatus)}</div></div>
+              <div class="sub-meta-item"><div class="sub-meta-label">Started</div><div class="sub-meta-val" style="font-size:0.8125rem;">${utils.formatDate(sub.startDate)}</div></div>
+              <div class="sub-meta-item"><div class="sub-meta-label">Days left</div><div class="sub-meta-val" id="days-left">—</div></div>
+            </div>
+            <div class="progress-wrap">
+              <div class="progress-label"><span>Progress</span><span>${pct}% used</span></div>
+              <div class="progress-track"><div class="progress-fill" id="prog-fill" style="width:0%"></div></div>
+            </div>
+          </div>
+          <div class="plan-detail fade-up delay-1">
+            <div class="card-header"><span class="card-title">Plan details</span></div>
+            <div class="detail-row"><span class="detail-label">Price</span><span class="detail-val">${utils.formatCurrency(sub.plan.price)} / ${sub.plan.duration.toLowerCase()}</span></div>
+            <div class="detail-row"><span class="detail-label">Food type</span><span class="detail-val">${utils.foodBadge(sub.plan.foodCategory)}</span></div>
+            <div class="detail-row"><span class="detail-label">Contact</span><span class="detail-val">${sub.plan.mess.phone}</span></div>
+            <div class="detail-row"><span class="detail-label">Address</span><span class="detail-val" style="font-size:0.8125rem;font-family:var(--font-display);">${sub.deliveryAddress}</span></div>
+            ${sub.specialInstructions ? `<div class="detail-row"><span class="detail-label">Instructions</span><span class="detail-val" style="font-size:0.8125rem;font-family:var(--font-display);">${sub.specialInstructions}</span></div>` : ''}
+          </div>
+          ${sub.status === 'ACTIVE' || sub.status === 'PENDING' ? `
+            <button class="btn btn-danger btn-full fade-up delay-2" onclick="cancelSub('${sub.id}')">Cancel subscription</button>` : ''}
+          <div class="card fade-up delay-3" style="margin-top:12px;">
+            <div class="card-header"><span class="card-title">Subscription history</span></div>
+            <div id="history-list"><div class="skeleton" style="height:60px;"></div></div>
+          </div>`
+
+          setTimeout(() => utils.countUp(document.getElementById('days-left'), typeof left === 'number' ? left : 0), 300)
+          setTimeout(() => { document.getElementById('prog-fill').style.width = pct + '%' }, 400)
+          utils.initRipples()
+          loadHistory()
+          return
+        }
+
+        // No existing sub — check URL params for new subscription form
+        const params = new URLSearchParams(window.location.search)
+        const planId = params.get('plan')
+        const messId = params.get('mess')
+
+        if (planId && messId) {
+          const plans = await api.plans.byMess(messId)
+          const plan = plans.find(p => p.id === planId)
+          if (!plan) { window.location.href = '/index.html'; return }
+          document.getElementById('page-body').innerHTML = `
+          <div class="card fade-up" style="border-color:var(--color-primary);">
+            <div class="card-header"><span class="card-title">Subscribe to this plan</span></div>
+            <div class="plan-detail">
+              <div class="detail-row"><span class="detail-label">Plan</span><span class="detail-val">${plan.name}</span></div>
+              <div class="detail-row"><span class="detail-label">Price</span><span class="detail-val">${utils.formatCurrency(plan.price)} / ${plan.duration.toLowerCase()}</span></div>
+              <div class="detail-row"><span class="detail-label">Meals</span><span class="detail-val">${plan.mealTypes.join(', ')}</span></div>
+              <div class="detail-row"><span class="detail-label">Slots left</span><span class="detail-val">${plan.maxSlots - plan.currentSlots}</span></div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Delivery address <span>*</span></label>
+              <input class="form-input" id="delivery-address" placeholder="Room no, hostel name, landmark...">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Special instructions</label>
+              <input class="form-input" id="special-instructions" placeholder="No onion, 3rd floor, ring bell...">
+            </div>
+            <button class="btn btn-primary btn-full" onclick="requestSub('${planId}')">Request subscription</button>
+            <p style="margin-top:10px;font-size:0.8125rem;text-align:center;">Owner will approve after receiving payment.</p>
+          </div>`
+          utils.initRipples()
+          return
+        }
+
+        // No sub and no params
+        document.getElementById('page-body').innerHTML = `
+        <div class="empty-state fade-up">
+          <div class="empty-state-icon">📋</div>
+          <h3>No active subscription</h3>
+          <p>Find a mess and subscribe to a plan.</p>
+          <a href="/index.html" class="btn btn-primary" style="margin-top:12px;">Browse mess</a>
+        </div>`
+      } catch (err) {
+        document.getElementById('page-body').innerHTML = `<div class="empty-state"><h3>Error</h3><p>${err.message}</p></div>`
+      }
+    }
+
+    async function loadHistory() {
+      try {
+        const history = await api.subscriptions.history()
+        const list = document.getElementById('history-list')
+        if (!list) return
+        list.innerHTML = history.length === 0 ? '<div style="font-size:0.875rem;color:var(--color-text-muted);padding:8px 0;">No history yet</div>'
+          : history.map(h => `
+          <div class="list-item">
+            <div style="flex:1;">
+              <div style="font-size:0.875rem;font-weight:600;">${h.plan.mess.name} — ${h.plan.name}</div>
+              <div style="font-size:0.75rem;color:var(--color-text-muted);">${utils.formatDate(h.createdAt)}</div>
+            </div>
+            ${utils.statusBadge(h.status)}
+          </div>`).join('')
+      } catch { }
+    }
+
+    async function requestSub(planId) {
+      const addr = document.getElementById('delivery-address').value.trim()
+      const instructions = document.getElementById('special-instructions').value.trim()
+      if (!addr) { utils.toast('Delivery address is required', 'warning'); return }
+      try {
+        await api.subscriptions.request({ planId, deliveryAddress: addr, specialInstructions: instructions || undefined })
+        // Bug 6 fix: show success screen with navigation buttons
+        document.getElementById('page-body').innerHTML = `
+        <div class="empty-state fade-up" style="padding:48px 24px;">
+          <div class="empty-state-icon" style="font-size:3.5rem;">🎉</div>
+          <h3 style="font-size:1.25rem;margin-bottom:8px;">Subscription request sent!</h3>
+          <p style="margin-bottom:24px;">The mess owner will review and approve your request after receiving payment.</p>
+          <div style="display:flex;gap:12px;flex-wrap:wrap;justify-content:center;">
+            <a href="/student/dashboard.html" class="btn btn-primary">Go to dashboard</a>
+            <a href="/index.html" class="btn btn-secondary">Browse more mess</a>
+          </div>
+        </div>`
+      } catch (err) { utils.toast(err.message, 'error') }
+    }
+
+    async function cancelSub(id) {
+      if (!utils.confirmDialog('Are you sure you want to cancel your subscription?')) return
+      try {
+        await api.subscriptions.cancel(id)
+        utils.toast('Subscription cancelled', 'success')
+        setTimeout(() => loadPage(), 1000)
+      } catch (err) { utils.toast(err.message, 'error') }
+    }
+
+    loadPage()
+  </script>
+</body>
+
+</html>
