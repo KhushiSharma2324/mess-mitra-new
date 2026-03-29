@@ -148,7 +148,7 @@ Make sure you have these installed on your machine before starting:
 ### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/<krishna7805>/messmitra.git
+git clone https://github.com/krishna7805/messmitra.git
 cd messmitra
 ```
 
