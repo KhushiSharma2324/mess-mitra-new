@@ -215,21 +215,7 @@ To visually explore your database:
 npx prisma studio
 ```
 
-### 5. Run the Application
-
-**Development mode** (with auto-reload via nodemon):
-
-```bash
-npm run dev
-```
-
-**Production mode:**
-
-```bash
-npm start
-```
-
-The server will start at: **http://localhost:3000**
+n0**
 
 You can verify the server is running by visiting the health check endpoint:
 

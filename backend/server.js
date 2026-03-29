@@ -36,6 +36,8 @@ app.use('/api/delivery', require('./src/modules/delivery/delivery.routes'))
 app.use('/api/reviews', require('./src/modules/reviews/reviews.routes'))
 app.use('/api/holidays', require('./src/modules/holidays/holidays.routes'))
 app.use('/api/upload', require('./src/modules/upload/upload.routes'))
+console.log('Loading Chatbot API...');
+app.use('/api/chat', require('./src/modules/chat/chat.routes'))
 
 app.use(notFoundHandler)
 app.use(errorHandler)
