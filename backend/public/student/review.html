@@ -1,119 +1,163 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Leave a Review — MessMitra</title>
-<link rel="stylesheet" href="/css/main.css">
-<link rel="stylesheet" href="/css/components.css">
-<link rel="manifest" href="/manifest.json">
-<style>
-  .star-row { display: flex; gap: 8px; margin: 8px 0 4px; }
-  .star-btn { width: 40px; height: 40px; border-radius: 50%; border: 2px solid var(--color-border); background: var(--color-bg); font-size: 1.25rem; cursor: pointer; transition: var(--transition-spring); display: flex; align-items: center; justify-content: center; }
-  .star-btn.active { background: var(--color-warning-light); border-color: var(--color-warning); transform: scale(1.15); }
-  .review-wrap { max-width: 480px; margin: 0 auto; }
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Leave a Review — MessMitra</title>
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="stylesheet" href="/css/components.css">
+  <link rel="manifest" href="/manifest.json">
+  <style>
+    .star-row {
+      display: flex;
+      gap: 8px;
+      margin: 8px 0 4px;
+    }
+
+    .star-btn {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      border: 2px solid var(--color-border);
+      background: var(--color-bg);
+      font-size: 1.25rem;
+      cursor: pointer;
+      transition: var(--transition-spring);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .star-btn.active {
+      background: var(--color-warning-light);
+      border-color: var(--color-warning);
+      transform: scale(1.15);
+    }
+
+    .review-wrap {
+      max-width: 480px;
+      margin: 0 auto;
+    }
+  </style>
 </head>
+
 <body class="page-student">
-<script>
-  const _t = localStorage.getItem('mm_token');
-  const _u = (() => { try { return JSON.parse(localStorage.getItem('mm_user')); } catch { return null; } })();
-  if (!_t || !_u) { window.location.replace('/login.html'); }
-</script>
-<div class="app-shell">
-  <aside class="sidebar">
-    <div class="sidebar-logo"><div class="sidebar-logo-mark">MessMitra</div><div class="sidebar-logo-sub">student portal</div></div>
-    <nav class="sidebar-nav">
-      <a href="/student/dashboard.html" class="sidebar-item"><div class="sidebar-item-dot"></div>Dashboard</a>
-      <a href="/student/delivery.html" class="sidebar-item active"><div class="sidebar-item-dot"></div>Delivery tracking</a>
-      <a href="/student/profile.html" class="sidebar-item"><div class="sidebar-item-dot"></div>Profile</a>
-    </nav>
-    <div class="sidebar-footer">
-      <div class="sidebar-user">
-        <div class="avatar avatar-sm" data-user-initials>?</div>
-        <div><div class="sidebar-user-name" data-user-name></div><div class="sidebar-user-role">Student</div></div>
+  <script>
+    const _t = localStorage.getItem('mm_token');
+    const _u = (() => { try { return JSON.parse(localStorage.getItem('mm_user')); } catch { return null; } })();
+    if (!_t || !_u) { window.location.replace('/login.html'); }
+  </script>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="sidebar-logo">
+        <div class="sidebar-logo-mark">MessMitra</div>
+        <div class="sidebar-logo-sub">student portal</div>
       </div>
-    </div>
-  </aside>
-  <div class="main-content">
-    <header class="topbar">
-      <a href="/student/delivery.html" style="color:var(--color-text-secondary);margin-right:8px;">
-        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M13 16L7 10l6-6"/></svg>
-      </a>
-      <div style="flex:1;font-size:1rem;font-weight:700;">Leave a review</div>
-    </header>
-    <main class="page-content">
-      <div class="review-wrap">
-        <div class="card fade-up">
-          <h3 style="margin-bottom:4px;">How was your meal?</h3>
-          <p style="margin-bottom:20px;">Your honest feedback helps improve the service.</p>
-          <div class="form-group">
-            <label class="form-label">Overall rating <span>*</span></label>
-            <div class="star-row" id="overall-stars"></div>
+      <nav class="sidebar-nav">
+        <a href="/student/dashboard.html" class="sidebar-item">
+          <div class="sidebar-item-dot"></div>Dashboard
+        </a>
+        <a href="/student/delivery.html" class="sidebar-item active">
+          <div class="sidebar-item-dot"></div>Delivery tracking
+        </a>
+        <a href="/student/profile.html" class="sidebar-item">
+          <div class="sidebar-item-dot"></div>Profile
+        </a>
+      </nav>
+      <div class="sidebar-footer">
+        <div class="sidebar-user">
+          <div class="avatar avatar-sm" data-user-initials>?</div>
+          <div>
+            <div class="sidebar-user-name" data-user-name></div>
+            <div class="sidebar-user-role">Student</div>
           </div>
-          <div class="form-group">
-            <label class="form-label">Food quality</label>
-            <div class="star-row" id="food-stars"></div>
-          </div>
-          <div class="form-group">
-            <label class="form-label">Delivery</label>
-            <div class="star-row" id="delivery-stars"></div>
-          </div>
-          <div class="form-group">
-            <label class="form-label">Your comment</label>
-            <textarea class="form-textarea" id="comment" placeholder="Tell us about your experience..."></textarea>
-          </div>
-          <button class="btn btn-primary btn-full" onclick="submitReview()">Submit review</button>
         </div>
       </div>
-    </main>
+    </aside>
+    <div class="main-content">
+      <header class="topbar">
+        <a href="/student/delivery.html" style="color:var(--color-text-secondary);margin-right:8px;">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round">
+            <path d="M13 16L7 10l6-6" />
+          </svg>
+        </a>
+        <div style="flex:1;font-size:1rem;font-weight:700;">Leave a review</div>
+      </header>
+      <main class="page-content">
+        <div class="review-wrap">
+          <div class="card fade-up">
+            <h3 style="margin-bottom:4px;">How was your meal?</h3>
+            <p style="margin-bottom:20px;">Your honest feedback helps improve the service.</p>
+            <div class="form-group">
+              <label class="form-label">Overall rating <span>*</span></label>
+              <div class="star-row" id="overall-stars"></div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Food quality</label>
+              <div class="star-row" id="food-stars"></div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Delivery</label>
+              <div class="star-row" id="delivery-stars"></div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Your comment</label>
+              <textarea class="form-textarea" id="comment" placeholder="Tell us about your experience..."></textarea>
+            </div>
+            <button class="btn btn-primary btn-full" onclick="submitReview()">Submit review</button>
+          </div>
+        </div>
+      </main>
+    </div>
   </div>
-</div>
-<script src="/js/auth.js"></script>
-<script src="/js/api.js"></script>
-<script src="/js/utils.js"></script>
-<script>
-  if (!auth.requireAuth(['STUDENT'])) {}
-  utils.fillUserInfo()
-  utils.registerSW()
+  <script src="/js/auth.js"></script>
+  <script src="/js/api.js"></script>
+  <script src="/js/utils.js"></script>
+  <script>
+    if (!auth.requireAuth(['STUDENT'])) { }
+    utils.fillUserInfo()
+    utils.registerSW()
 
-  const params = new URLSearchParams(window.location.search)
-  const orderId = params.get('orderId')
-  if (!orderId) window.location.href = '/student/delivery.html'
+    const params = new URLSearchParams(window.location.search)
+    const orderId = params.get('orderId')
+    if (!orderId) window.location.href = '/student/delivery.html'
 
-  let ratings = { overall: 0, food: 0, delivery: 0 }
+    let ratings = { overall: 0, food: 0, delivery: 0 }
 
-  function buildStars(containerId, key) {
-    const container = document.getElementById(containerId)
-    container.innerHTML = [1,2,3,4,5].map(n => `
+    function buildStars(containerId, key) {
+      const container = document.getElementById(containerId)
+      container.innerHTML = [1, 2, 3, 4, 5].map(n => `
       <button class="star-btn" data-val="${n}" onclick="setRating('${key}','${containerId}',${n})">★</button>`).join('')
-  }
+    }
 
-  function setRating(key, containerId, val) {
-    ratings[key] = val
-    document.querySelectorAll(`#${containerId} .star-btn`).forEach(btn => {
-      btn.classList.toggle('active', Number(btn.dataset.val) <= val)
-    })
-  }
-
-  buildStars('overall-stars',  'overall')
-  buildStars('food-stars',     'food')
-  buildStars('delivery-stars', 'delivery')
-
-  async function submitReview() {
-    if (!ratings.overall) { utils.toast('Please select an overall rating', 'warning'); return }
-    try {
-      await api.reviews.submit({
-        deliveryOrderId: orderId,
-        rating:         ratings.overall,
-        foodRating:     ratings.food || undefined,
-        deliveryRating: ratings.delivery || undefined,
-        comment:        document.getElementById('comment').value.trim() || undefined,
+    function setRating(key, containerId, val) {
+      ratings[key] = val
+      document.querySelectorAll(`#${containerId} .star-btn`).forEach(btn => {
+        btn.classList.toggle('active', Number(btn.dataset.val) <= val)
       })
-      utils.toast('Review submitted! Thank you.', 'success')
-      setTimeout(() => window.location.href = '/student/delivery.html', 1500)
-    } catch (err) { utils.toast(err.message, 'error') }
-  }
-</script>
+    }
+
+    buildStars('overall-stars', 'overall')
+    buildStars('food-stars', 'food')
+    buildStars('delivery-stars', 'delivery')
+
+    async function submitReview() {
+      if (!ratings.overall) { utils.toast('Please select an overall rating', 'warning'); return }
+      try {
+        await api.reviews.submit({
+          deliveryOrderId: orderId,
+          rating: ratings.overall,
+          foodRating: ratings.food || undefined,
+          deliveryRating: ratings.delivery || undefined,
+          comment: document.getElementById('comment').value.trim() || undefined,
+        })
+        utils.toast('Review submitted! Thank you.', 'success')
+        setTimeout(() => window.location.href = '/student/delivery.html', 1500)
+      } catch (err) { utils.toast(err.message, 'error') }
+    }
+  </script>
 </body>
+
 </html>

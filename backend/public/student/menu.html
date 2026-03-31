@@ -105,11 +105,11 @@
 </head>
 
 <body class="page-student">
-<script>
-  const _t = localStorage.getItem('mm_token');
-  const _u = (() => { try { return JSON.parse(localStorage.getItem('mm_user')); } catch { return null; } })();
-  if (!_t || !_u) { window.location.replace('/login.html'); }
-</script>
+  <script>
+    const _t = localStorage.getItem('mm_token');
+    const _u = (() => { try { return JSON.parse(localStorage.getItem('mm_user')); } catch { return null; } })();
+    if (!_t || !_u) { window.location.replace('/login.html'); }
+  </script>
   <div class="app-shell">
     <aside class="sidebar">
       <div class="sidebar-logo">
